@@ -1,17 +1,24 @@
 import * as THREE from 'three';
 import { BorderSystem } from './border.js';
 import { Tree } from './tree.js';
+import { VoiceTree } from './voice.js'; 
 import { SoundAnalyser } from './sound.js';
-import { FrostedGlassShader } from './glass.js'; // Import Glass
+import { BlueWaveShader } from './wave.js'; 
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'; // Need this
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 let scene, camera, renderer, composer, borderSystem, sound;
 let trees = [];
-let glassPass; // Reference to update glass uniforms
+let voiceTrees = [];
+let wavePass;
+
+let isRedActive = false;
+let isBlueActive = false;
+let blueFade = 0.0;
+
 const frustumSize = 100;
 
 const btn = document.createElement('button');
@@ -40,33 +47,44 @@ function init() {
     renderer.toneMapping = THREE.ReinhardToneMapping;
     document.body.appendChild(renderer.domElement);
 
-    // --- COMPOSER STACK ---
     const renderScene = new RenderPass(scene, camera);
-    
-    // 1. Bloom (Make it glow first)
     const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight), 
-        19.5, .8, 0.0
+        18.5, 0.6, 0.0
     );
 
-    // 2. Glass (Distort the glowing image)
-    glassPass = new ShaderPass(FrostedGlassShader);
-    // Config: 
-    // Scale 10.0 = Fine frost. Scale 2.0 = Wavy glass.
-    glassPass.uniforms.uScale.value = 1.0; 
-    // Amount 0.005 = Subtle. Amount 0.02 = Strong smudge.
-    glassPass.uniforms.uAmount.value = 0.008; 
+    wavePass = new ShaderPass(BlueWaveShader);
+    // Safety check to ensure uniform exists
+    if (wavePass.uniforms.uResolution) {
+        wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    }
 
     composer = new EffectComposer(renderer);
     composer.addPass(renderScene);
     composer.addPass(bloomPass);
-    composer.addPass(glassPass); // Glass goes LAST to smudge everything
+    composer.addPass(wavePass); 
 
     borderSystem = new BorderSystem(25, frustumSize * aspect, frustumSize);
 
     borderSystem.seeds.forEach(seed => {
         const tree = new Tree(seed, borderSystem, scene);
         trees.push(tree);
+
+        const vTree = new VoiceTree(seed, borderSystem, scene);
+        voiceTrees.push(vTree);
+    });
+
+    window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        
+        if (key === 'r') {
+            isRedActive = !isRedActive;
+            voiceTrees.forEach(vt => vt.toggle(isRedActive));
+        }
+
+        if (key === 'b') {
+            isBlueActive = !isBlueActive;
+        }
     });
 
     animate();
@@ -78,17 +96,21 @@ function animate() {
     const audioData = sound.getData(); 
     const time = Date.now() * 0.006; 
     
-    borderSystem.update(time, audioData);
+    if (borderSystem) borderSystem.update(time, audioData);
+    
     trees.forEach(t => t.update(audioData, time));
+    voiceTrees.forEach(vt => vt.update(audioData, time));
 
-    // Update Glass Shader
-    if (glassPass) {
-        glassPass.uniforms.uTime.value = time;
-        // Optional: Shake the glass when bass hits
-        // glassPass.uniforms.uAmount.value = 0.008 + (audioData.bass * 0.02);
+    if (wavePass) {
+        wavePass.uniforms.uTime.value = time;
+        wavePass.uniforms.uAudio.value = audioData.bass;
+
+        const target = isBlueActive ? 1.0 : 0.0;
+        blueFade += (target - blueFade) * 0.05; 
+        wavePass.uniforms.uActive.value = blueFade;
     }
 
-    composer.render();
+    if (composer) composer.render();
 }
 
 window.addEventListener('resize', () => {
@@ -98,8 +120,16 @@ window.addEventListener('resize', () => {
     camera.top = frustumSize / 2;
     camera.bottom = -frustumSize / 2;
     camera.updateProjectionMatrix();
+    
     renderer.setSize(window.innerWidth, window.innerHeight);
-    composer.setSize(window.innerWidth, window.innerHeight);
+    
+    // Safety check for composer
+    if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+    
+    // Safety check for wavePass
+    if(wavePass && wavePass.uniforms.uResolution) {
+        wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    }
 });
 
 init();
