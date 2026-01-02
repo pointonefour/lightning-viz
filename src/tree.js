@@ -12,8 +12,8 @@ export class Tree {
         // --- BUFFERS ---
         this.maxSegments = 12000; 
         
-        this.maxDepth = 6; 
-        this.treeScale = (0.7 + Math.random() * 0.8); 
+        this.maxDepth = 15; 
+        this.treeScale = (0.9 + Math.random() * 0.8); 
         
         this.isFlashing = false;
         this.cooldownTimer = Math.random() * 2.0;
@@ -21,7 +21,7 @@ export class Tree {
         // --- FIX 1: HIGHER THRESHOLD ---
         // Old: 0.15. New: 0.55
         // This ensures the tree ignores quiet sounds and only reacts to peaks.
-        this.triggerThreshold = 0.55 + Math.random() * 0.3;
+        this.triggerThreshold = 0.25 + Math.random() * 0.3;
 
         this.palette = [
             new THREE.Color(0x703BE7), // Red
@@ -40,7 +40,7 @@ export class Tree {
         this.skeleton = []; 
         
         const currentScale = this.treeScale * (0.8 + Math.random() * 0.4);
-        const trunkCount = 2 + Math.floor(Math.random() * 3); 
+        const trunkCount = 2 + Math.floor(Math.random() * 2); 
         
         for(let i=0; i<trunkCount; i++) {
             const angle = Math.random() * Math.PI * 2;

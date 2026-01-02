@@ -46,7 +46,7 @@ function init() {
     // 1. Bloom (Make it glow first)
     const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight), 
-        14.5, .8, 0.0
+        19.5, .8, 0.0
     );
 
     // 2. Glass (Distort the glowing image)
