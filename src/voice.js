@@ -4,40 +4,47 @@ export class VoiceTree {
     constructor(seed, borderSystem, scene) {
         this.seedId = seed.id;
         this.seedRef = seed;
+        this.borderSystem = borderSystem;
         this.scene = scene;
-        this.borderSystem = borderSystem; 
         
-        this.isActive = false; 
+        this.isActive = false; // Controlled by "R"
         this.opacity = 0;
         
+        // --- BUFFERS ---
         this.maxSegments = 15000; 
-        this.maxDepth = 6; 
         
-        this.treeScale = (0.8 + Math.random() * 0.6); 
+        // DIFFERENCE: Higher Recursion
+        this.maxDepth = 7; 
+        
+        this.treeScale = (1.0 + Math.random() * 0.8); 
         
         this.isFlashing = false;
+        this.cooldownTimer = Math.random() * 2.0;
 
-        // --- SENSITIVITY FIX ---
-        // Old: 0.05 (triggered by everything)
-        // New: 0.40 (requires distinct, loud input)
-        this.triggerThreshold = 0.40; 
+        // DIFFERENCE: Less Sensitive (Higher Threshold)
+        // Tree.js was ~0.25. This is ~0.45.
+        // Requires a louder vocal input to trigger.
+        this.triggerThreshold = 0.45 + Math.random() * 0.2;
 
-        // Dimmer Palette (Subtle look)
+        // DIFFERENCE: Red Palette
         this.palette = [
-            new THREE.Color(0.8, 0.1, 0.1), 
-            new THREE.Color(0.5, 0.0, 0.0), 
-            new THREE.Color(0.6, 0.2, 0.2)  
+            new THREE.Color(0xFF0000), // Pure Red
+            new THREE.Color(0xCC0000), // Deep Red
+            new THREE.Color(0xFF4444), // Bright Red
+            new THREE.Color(0x880000)  // Blood Red
         ];
 
         this.skeleton = []; 
+        
         this.initMesh();
-        this.regenerate(); 
+        // Generate immediately so it's ready when "R" is pressed
+        this.regenerate();
     }
 
     toggle(state) {
         this.isActive = state;
         if (state) {
-            console.log("RED LIGHTNING ARMED (Low Sensitivity)");
+            console.log("RED LIGHTNING ACTIVE");
             this.mesh.visible = true;
         } else {
             this.mesh.visible = false;
@@ -47,32 +54,44 @@ export class VoiceTree {
 
     regenerate() {
         this.skeleton = []; 
+        
         const currentScale = this.treeScale * (0.8 + Math.random() * 0.4);
-        const trunkCount = 2 + Math.floor(Math.random() * 3); 
+        const trunkCount = 2 + Math.floor(Math.random() * 2); 
         
         for(let i=0; i<trunkCount; i++) {
             const angle = Math.random() * Math.PI * 2;
             const dir = new THREE.Vector2(Math.cos(angle), Math.sin(angle));
-            const len = (20 + Math.random() * 10) * currentScale;
+            
+            // DIFFERENCE: Longer Branches
+            // Tree.js was (15 + random * 10). Here we use (30 + random * 15).
+            const len = (30 + Math.random() * 15) * currentScale;
             
             const baseColor = this.palette[Math.floor(Math.random() * this.palette.length)].clone();
+            // Slight variation
+            baseColor.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
+
             this.growBranch(-1, null, dir, 0, baseColor, len);
         }
+
         this.updateColorBuffer();
     }
 
     growBranch(parentId, startPos, direction, depth, color, length) {
         if (this.skeleton.length >= this.maxSegments) return;
         if (depth >= this.maxDepth) return;
-        
+        // Less chance to stop early compared to regular tree
+        if (depth > 2 && Math.random() < (depth * 0.1)) return;
+
         const segmentSize = 2.0; 
         const steps = Math.max(2, Math.floor(length / segmentSize));
         const stepLen = length / steps;
+
         let currentParentId = parentId;
         
         for (let i = 0; i < steps; i++) {
             if (this.skeleton.length >= this.maxSegments) break;
-            const kink = (Math.random() - 0.5) * 0.9; 
+
+            const kink = (Math.random() - 0.5) * 0.8; 
             const currentDir = direction.clone().rotateAround(new THREE.Vector2(0,0), kink);
 
             const seg = {
@@ -83,17 +102,26 @@ export class VoiceTree {
                 len: stepLen,
                 color: color 
             };
+
             this.skeleton.push(seg);
             currentParentId = seg.id;
         }
 
-        let childCount = (depth === 0) ? 2 + Math.floor(Math.random() * 2) : (Math.random() < 0.6 ? 1 : 2);
+        let childCount;
+        const r = Math.random();
+        if (depth === 0) childCount = 2 + Math.floor(Math.random() * 3);
+        else if (r < 0.3) childCount = 1;
+        else if (r < 0.8) childCount = 2;
+        else childCount = 3;
 
         for(let i=0; i<childCount; i++) {
             const spread = 1.6 - (depth * 0.2); 
             const angleOffset = (Math.random() - 0.5) * spread;
             const newDir = direction.clone().rotateAround(new THREE.Vector2(0,0), angleOffset);
-            const newLen = length * (0.6 + Math.random() * 0.3);
+            
+            const decay = 0.6 + Math.random() * 0.3;
+            const newLen = length * decay;
+
             this.growBranch(currentParentId, null, newDir, depth + 1, color, newLen);
         }
     }
@@ -102,6 +130,7 @@ export class VoiceTree {
         const count = this.maxSegments * 2; 
         this.positions = new Float32Array(count * 3);
         this.colors = new Float32Array(count * 3);   
+
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
@@ -123,44 +152,67 @@ export class VoiceTree {
     updateColorBuffer() {
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
+            const r = seg.color.r;
+            const g = seg.color.g;
+            const b = seg.color.b;
+            const tipGlow = (seg.depth / this.maxDepth) * 0.8;
+
             const idx = i * 6; 
             for(let k=0; k<6; k+=3) {
-                this.colors[idx+k]   = seg.color.r;
-                this.colors[idx+k+1] = seg.color.g;
-                this.colors[idx+k+2] = seg.color.b;
+                this.colors[idx+k]   = Math.min(1, r + tipGlow);
+                this.colors[idx+k+1] = Math.min(1, g + tipGlow);
+                this.colors[idx+k+2] = Math.min(1, b + tipGlow);
             }
         }
         this.mesh.geometry.attributes.color.needsUpdate = true;
     }
 
     update(audio, time) {
-        if (!this.isActive) return;
+        // --- CHECK ACTIVE FLAG ---
+        if (!this.isActive) {
+            if (this.mesh.visible) this.mesh.visible = false;
+            return;
+        }
 
-        const anchorPos = this.seedRef.currPos || new THREE.Vector2(0,0);
+        if (!this.mesh) return;
+
+        // Use Wandering Position (synced with border.js)
+        const anchorPos = this.seedRef.currPos || this.seedRef.basePos; 
+
+        // Territory Check (Exact copy of logic)
+        if (this.borderSystem.getOwnerId(anchorPos) !== this.seedId) {
+            this.opacity = 0;
+            this.mesh.visible = false;
+            this.isFlashing = false;
+            return;
+        }
+
         const dt = 0.016; 
 
         if (this.isFlashing) {
-            this.opacity -= dt * 2.0; 
+            this.opacity -= dt * 2.5; 
             if (this.opacity <= 0) {
                 this.opacity = 0;
                 this.isFlashing = false;
+                this.cooldownTimer = 0.2 + Math.random() * 1.5;
             }
         } else {
-            // --- NOISE GATE & SENSITIVITY ---
-            
-            // 1. Get raw volume of "Mids" (Voice range)
-            const rawVolume = audio.mid;
+            if (this.cooldownTimer > 0) {
+                this.cooldownTimer -= dt;
+            } else {
+                // --- AUDIO FILTERING (Exact Copy) ---
+                const bass = audio.bass > 0.2 ? audio.bass : 0;
+                const mid = audio.mid > 0.2 ? audio.mid : 0;
+                const treble = audio.treble > 0.2 ? audio.treble : 0;
 
-            // 2. NOISE GATE: 
-            // If volume is below 0.2, ignore it completely.
-            // This filters out background hum/fans/breathing.
-            if (rawVolume > 0.2) {
-                
-                // 3. COMPARE TO THRESHOLD
-                if (rawVolume > this.triggerThreshold) {
+                // Emphasize Mid/Vocals for Red Lightning
+                const audioEnergy = (bass * 0.5) + (mid * 1.5) + (treble * 1.0);
+                const flux = (Math.random() - 0.5) * 0.1;
+
+                if (audioEnergy > (this.triggerThreshold + flux)) {
                     this.isFlashing = true;
-                    this.opacity = 0.6; // Cap brightness
-                    this.regenerate(); 
+                    this.opacity = 1.0; 
+                    this.regenerate();
                 }
             }
         }
@@ -173,29 +225,48 @@ export class VoiceTree {
         this.mesh.visible = true;
         this.material.opacity = this.opacity;
 
-        // JITTER LOGIC
+        // --- CLEAN JITTER (Exact Copy) ---
+        const cleanTreble = audio.treble > 0.1 ? audio.treble : 0.1;
+        const jitterStrength = cleanTreble * 2.0; 
+
         const validTips = new Map(); 
         let posIndex = 0;
-        
-        // Only jitter if sound is loud
-        const jitterStrength = (audio.mid > 0.2) ? (audio.mid * 5.0) : 0;
 
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
-            let start = (seg.parentId === -1) ? anchorPos.clone() : validTips.get(seg.parentId);
-            
-            if (start) {
-                const currentLen = seg.len;
+            let start;
+            let isBranchValid = true;
+
+            if (seg.parentId === -1) {
+                start = anchorPos.clone();
+            } else {
+                start = validTips.get(seg.parentId);
+                if (!start) isBranchValid = false; 
+            }
+
+            let end;
+            if (isBranchValid) {
+                // Use Clean Bass (Gated)
+                const cleanBass = audio.bass > 0.2 ? audio.bass : 0;
+                const currentLen = seg.len * (1.0 + cleanBass * 0.15);
                 const currentDir = seg.dir.clone();
-                let end = start.clone().add(currentDir.multiplyScalar(currentLen));
+                end = start.clone().add(currentDir.multiplyScalar(currentLen));
                 
-                if (jitterStrength > 0) {
+                if (jitterStrength > 0.05) {
                     end.x += (Math.random() - 0.5) * jitterStrength;
                     end.y += (Math.random() - 0.5) * jitterStrength;
                 }
 
+                if (this.borderSystem.getOwnerId(end) !== this.seedId) {
+                    end = start.clone().add(currentDir.normalize().multiplyScalar(currentLen * 0.1));
+                    if (this.borderSystem.getOwnerId(end) !== this.seedId) {
+                        isBranchValid = false;
+                    }
+                }
+            }
+
+            if (isBranchValid) {
                 validTips.set(seg.id, end); 
-                
                 this.positions[posIndex++] = start.x;
                 this.positions[posIndex++] = start.y;
                 this.positions[posIndex++] = 0;
@@ -207,7 +278,10 @@ export class VoiceTree {
             }
         }
         
-        while(posIndex < this.positions.length) this.positions[posIndex++] = 0;
+        while(posIndex < this.positions.length) {
+            this.positions[posIndex++] = 0;
+        }
+
         this.mesh.geometry.attributes.position.needsUpdate = true;
     }
 }
