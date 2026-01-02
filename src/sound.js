@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 export class SoundAnalyser {
     constructor() {
         this.context = null;
@@ -21,16 +19,16 @@ export class SoundAnalyser {
             
             this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
             this.isInitialized = true;
-            console.log("Audio System Live");
         } catch (err) {
             console.error("Audio Init Failed:", err);
         }
     }
 
-    // RENAMED FUNCTION TO ENSURE CACHE CLEAR
     getData() {
-        // IMPORTANT: Must return an object with zeros, NOT just 'return;'
-        if (!this.isInitialized) return { bass: 0, mid: 0, treble: 0 };
+        // FIX: Must return { bass:0, mid:0, treble:0 } instead of undefined
+        if (!this.isInitialized) {
+            return { bass: 0, mid: 0, treble: 0 };
+        }
         
         this.analyser.getByteFrequencyData(this.dataArray);
 

@@ -46,14 +46,14 @@ function init() {
     // 1. Bloom (Make it glow first)
     const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight), 
-        4.5, 0.8, 0.0
+        14.5, .8, 0.0
     );
 
     // 2. Glass (Distort the glowing image)
     glassPass = new ShaderPass(FrostedGlassShader);
     // Config: 
     // Scale 10.0 = Fine frost. Scale 2.0 = Wavy glass.
-    glassPass.uniforms.uScale.value = 15.0; 
+    glassPass.uniforms.uScale.value = 1.0; 
     // Amount 0.005 = Subtle. Amount 0.02 = Strong smudge.
     glassPass.uniforms.uAmount.value = 0.008; 
 

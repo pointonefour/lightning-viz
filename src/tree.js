@@ -10,8 +10,6 @@ export class Tree {
         this.opacity = 0;
         
         // --- BUFFERS ---
-        // We allocate enough space for a massive tree.
-        // We will reuse this memory every time the tree changes shape.
         this.maxSegments = 12000; 
         
         this.maxDepth = 6; 
@@ -19,35 +17,29 @@ export class Tree {
         
         this.isFlashing = false;
         this.cooldownTimer = Math.random() * 2.0;
-        this.triggerThreshold = 0.15 + Math.random() * 0.25;
+
+        // --- FIX 1: HIGHER THRESHOLD ---
+        // Old: 0.15. New: 0.55
+        // This ensures the tree ignores quiet sounds and only reacts to peaks.
+        this.triggerThreshold = 0.55 + Math.random() * 0.3;
 
         this.palette = [
-            new THREE.Color(0xFF0044), // Red
-            new THREE.Color(0x00AAFF), // Blue
+            new THREE.Color(0x703BE7), // Red
+            new THREE.Color(0x307D7E), // Blue
             new THREE.Color(0xAA00FF), // Purple
-            new THREE.Color(0xFFFFFF)  // White
+            new THREE.Color(0x7F00FF)  // White
         ];
 
         this.skeleton = []; 
         
-        // 1. Create the buffers ONCE
         this.initMesh();
-        
-        // 2. Generate initial shape (so it's not empty)
         this.regenerate();
     }
 
-    /**
-     * Completely rebuilds the tree structure.
-     * Called every time the lightning strikes.
-     */
     regenerate() {
-        this.skeleton = []; // Clear old shape
+        this.skeleton = []; 
         
-        // Randomize scale slightly every strike
         const currentScale = this.treeScale * (0.8 + Math.random() * 0.4);
-
-        // Start 2-4 Trunks
         const trunkCount = 2 + Math.floor(Math.random() * 3); 
         
         for(let i=0; i<trunkCount; i++) {
@@ -55,15 +47,12 @@ export class Tree {
             const dir = new THREE.Vector2(Math.cos(angle), Math.sin(angle));
             const len = (15 + Math.random() * 10) * currentScale;
             
-            // Random color for this strike
             const baseColor = this.palette[Math.floor(Math.random() * this.palette.length)].clone();
             baseColor.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
 
             this.growBranch(-1, null, dir, 0, baseColor, len);
         }
 
-        // IMPORTANT: Update Color Buffer immediately
-        // because the structure changed, the colors might have moved.
         this.updateColorBuffer();
     }
 
@@ -72,7 +61,6 @@ export class Tree {
         if (depth >= this.maxDepth) return;
         if (depth > 1 && Math.random() < (depth * 0.12)) return;
 
-        // Create Zig-Zag segments
         const segmentSize = 2.0; 
         const steps = Math.max(2, Math.floor(length / segmentSize));
         const stepLen = length / steps;
@@ -98,7 +86,6 @@ export class Tree {
             currentParentId = seg.id;
         }
 
-        // Recursion (Branching)
         let childCount;
         const r = Math.random();
         if (depth === 0) childCount = 2 + Math.floor(Math.random() * 3);
@@ -118,7 +105,6 @@ export class Tree {
     }
 
     initMesh() {
-        // Allocate max memory
         const count = this.maxSegments * 2; 
         this.positions = new Float32Array(count * 3);
         this.colors = new Float32Array(count * 3);   
@@ -127,7 +113,6 @@ export class Tree {
         geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
         
-        // Ensure frusum culling doesn't hide dynamic geometry
         geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 500);
 
         this.material = new THREE.LineBasicMaterial({
@@ -148,8 +133,6 @@ export class Tree {
             const r = seg.color.r;
             const g = seg.color.g;
             const b = seg.color.b;
-            
-            // Tips glow white
             const tipGlow = (seg.depth / this.maxDepth) * 0.8;
 
             const idx = i * 6; 
@@ -164,9 +147,11 @@ export class Tree {
 
     update(audio, time) {
         if (!this.mesh) return;
-        const anchorPos = this.seedRef.basePos; 
 
-        // 1. TERRITORY CHECK
+        // IMPORTANT: Use currPos if using the wandering border system, 
+        // fallback to basePos if using the static one.
+        const anchorPos = this.seedRef.currPos || this.seedRef.basePos; 
+
         if (this.borderSystem.getOwnerId(anchorPos) !== this.seedId) {
             this.opacity = 0;
             this.mesh.visible = false;
@@ -177,30 +162,29 @@ export class Tree {
         const dt = 0.016; 
 
         if (this.isFlashing) {
-            // Decay Phase
             this.opacity -= dt * 2.5; 
-            
             if (this.opacity <= 0) {
                 this.opacity = 0;
                 this.isFlashing = false;
                 this.cooldownTimer = 0.2 + Math.random() * 1.5;
             }
         } else {
-            // Wait Phase
             if (this.cooldownTimer > 0) {
                 this.cooldownTimer -= dt;
             } else {
-                // Check Trigger
-                const audioEnergy = (audio.bass * 0.6) + (audio.mid * 0.8) + (audio.treble * 1.5);
-                const flux = (Math.random() - 0.5) * 0.15;
+                // --- FIX 2: AUDIO FILTERING ---
+                // "Noise Gate": If audio is below 0.2, consider it 0.
+                // This removes response to background hiss.
+                const bass = audio.bass > 0.2 ? audio.bass : 0;
+                const mid = audio.mid > 0.2 ? audio.mid : 0;
+                const treble = audio.treble > 0.2 ? audio.treble : 0;
+
+                const audioEnergy = (bass * 0.6) + (mid * 0.8) + (treble * 1.5);
+                const flux = (Math.random() - 0.5) * 0.1;
 
                 if (audioEnergy > (this.triggerThreshold + flux)) {
-                    // --- IGNITION ---
                     this.isFlashing = true;
                     this.opacity = 1.0; 
-                    
-                    // REGENERATE SHAPE NOW!
-                    // This creates a brand new unique tree for this specific flash
                     this.regenerate();
                 }
             }
@@ -214,10 +198,15 @@ export class Tree {
         this.mesh.visible = true;
         this.material.opacity = this.opacity;
 
-        // 3. JITTER & POSITION UPDATE
+        // --- FIX 3: REDUCED JITTER (SLOWER MOVEMENT) ---
+        // 1. We check if treble is > 0.1. If it is, we use it. If not, jitter is 0.
+        // 2. We REMOVED the + Math.random() part. 
+        // This stops the frantic vibration. It only shakes when the music hits high notes.
+        const cleanTreble = audio.treble > 0.1 ? audio.treble : 0;
+        const jitterStrength = cleanTreble * 2.0; 
+
         const validTips = new Map(); 
         let posIndex = 0;
-        const jitterStrength = 0.1 + (audio.treble * 4.0) + (Math.random() * 0.3);
 
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
@@ -233,16 +222,18 @@ export class Tree {
 
             let end;
             if (isBranchValid) {
-                // Audio Stretch
-                const currentLen = seg.len * (1.0 + audio.bass * 0.15);
+                // Use Clean Bass (Gated) for stretching
+                const cleanBass = audio.bass > 0.2 ? audio.bass : 0;
+                const currentLen = seg.len * (1.0 + cleanBass * 0.15);
                 const currentDir = seg.dir.clone();
                 end = start.clone().add(currentDir.multiplyScalar(currentLen));
                 
-                // Jitter
-                end.x += (Math.random() - 0.5) * jitterStrength;
-                end.y += (Math.random() - 0.5) * jitterStrength;
+                // Only apply jitter if there is loud treble
+                if (jitterStrength > 0.05) {
+                    end.x += (Math.random() - 0.5) * jitterStrength;
+                    end.y += (Math.random() - 0.5) * jitterStrength;
+                }
 
-                // Border Clip
                 if (this.borderSystem.getOwnerId(end) !== this.seedId) {
                     end = start.clone().add(currentDir.normalize().multiplyScalar(currentLen * 0.1));
                     if (this.borderSystem.getOwnerId(end) !== this.seedId) {
@@ -253,22 +244,17 @@ export class Tree {
 
             if (isBranchValid) {
                 validTips.set(seg.id, end); 
-                
                 this.positions[posIndex++] = start.x;
                 this.positions[posIndex++] = start.y;
                 this.positions[posIndex++] = 0;
-                
                 this.positions[posIndex++] = end.x;
                 this.positions[posIndex++] = end.y;
                 this.positions[posIndex++] = 0;
             } else {
-                // Collapse unused segment
                 for(let k=0; k<6; k++) this.positions[posIndex++] = 0;
             }
         }
         
-        // IMPORTANT: Zero out the rest of the buffer 
-        // if the new tree is smaller than the previous one
         while(posIndex < this.positions.length) {
             this.positions[posIndex++] = 0;
         }
