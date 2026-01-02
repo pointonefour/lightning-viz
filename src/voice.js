@@ -7,10 +7,10 @@ export class VoiceTree {
         this.borderSystem = borderSystem;
         this.scene = scene;
         
-        this.isActive = false; // Logic flag
-        this.masterAlpha = 0.0; // FADE ANIMATION VALUE
+        this.isActive = false; 
+        this.masterAlpha = 0.0; 
         
-        this.opacity = 0; // Flash opacity
+        this.opacity = 0;
         
         this.maxSegments = 15000; 
         this.maxDepth = 7; 
@@ -19,7 +19,11 @@ export class VoiceTree {
         
         this.isFlashing = false;
         this.cooldownTimer = Math.random() * 2.0;
-        this.triggerThreshold = 0.45 + Math.random() * 0.2;
+
+        // --- SENSITIVITY CONFIG ---
+        // Threshold is now compared against "Squared Energy"
+        // 0.3 is a good balance for ignoring breath but catching speech
+        this.triggerThreshold = 0.3;
 
         this.palette = [
             new THREE.Color(0xFF0000), 
@@ -35,18 +39,14 @@ export class VoiceTree {
 
     toggle(state) {
         this.isActive = state;
-        
         if (state) {
             console.log("RED LIGHTNING FADING IN...");
-            this.mesh.visible = true; // Make sure it's renderable
-            
-            // Optional: Trigger a flash immediately so the user sees it appearing
+            this.mesh.visible = true; 
             this.isFlashing = true;
             this.opacity = 1.0;
             this.regenerate();
         } else {
             console.log("RED LIGHTNING FADING OUT...");
-            // Do NOT hide mesh yet. Wait for fade out in update().
         }
     }
 
@@ -150,24 +150,18 @@ export class VoiceTree {
 
         // --- 1. MASTER FADE LOGIC ---
         const targetMaster = this.isActive ? 1.0 : 0.0;
-        
-        // Smoothly fade masterAlpha towards target
-        // 0.05 is fade speed.
         this.masterAlpha += (targetMaster - this.masterAlpha) * 0.05;
 
-        // Optimization: If completely invisible and inactive, stop processing
         if (this.masterAlpha < 0.01 && !this.isActive) {
             this.mesh.visible = false;
             return;
         }
-        
         this.mesh.visible = true;
 
         // --- 2. LIGHTNING LOGIC ---
         const anchorPos = this.seedRef.currPos || this.seedRef.basePos; 
 
         if (this.borderSystem.getOwnerId(anchorPos) !== this.seedId) {
-            // Even if active, hide if not in territory
             this.opacity = 0;
             this.isFlashing = false;
         } else {
@@ -183,38 +177,47 @@ export class VoiceTree {
                 if (this.cooldownTimer > 0) {
                     this.cooldownTimer -= dt;
                 } else {
-                    const bass = audio.bass > 0.2 ? audio.bass : 0;
-                    const mid = audio.mid > 0.2 ? audio.mid : 0;
-                    const treble = audio.treble > 0.2 ? audio.treble : 0;
+                    // --- NOISE GATE LOGIC START ---
+                    
+                    // 1. Isolate Mids (Human Voice)
+                    let rawVoice = audio.mid;
 
-                    const audioEnergy = (bass * 0.5) + (mid * 1.5) + (treble * 1.0);
-                    const flux = (Math.random() - 0.5) * 0.1;
+                    // 2. Hard Cutoff (The Breath Filter)
+                    // If volume is below 35%, ignore it completely.
+                    // Most breathing is around 0.1 - 0.2
+                    if (rawVoice < 0.35) {
+                        rawVoice = 0;
+                    }
 
-                    if (audioEnergy > (this.triggerThreshold + flux)) {
+                    // 3. Exponential Boost
+                    // This separates loud sounds from quiet sounds drastically.
+                    // 0.4 * 0.4 = 0.16 (Weak)
+                    // 0.8 * 0.8 = 0.64 (Strong)
+                    const energy = (rawVoice * rawVoice) * 3.0; // Multiplier to bring it back up to threshold levels
+
+                    // 4. Trigger
+                    if (energy > this.triggerThreshold) {
                         this.isFlashing = true;
                         this.opacity = 1.0; 
                         this.regenerate();
                     }
+                    // --- NOISE GATE LOGIC END ---
                 }
             }
         }
 
         // --- 3. APPLY VISIBILITY ---
-        // Combine the lightning flash opacity with the master fade opacity
         this.material.opacity = this.opacity * this.masterAlpha;
 
-        if (this.material.opacity < 0.01) {
-            // Don't draw if invisible
-            return; 
-        }
+        if (this.material.opacity < 0.01) return;
 
         // --- 4. GEOMETRY UPDATES ---
-        const cleanTreble = audio.treble > 0.1 ? audio.treble : 0;
-        const jitterStrength = cleanTreble * 2.0; 
         const cleanBass = audio.bass > 0.2 ? audio.bass : 0;
-
         const validTips = new Map(); 
         let posIndex = 0;
+
+        // Jitter only happens on loud sounds now
+        const jitterStrength = (audio.mid > 0.3) ? (audio.mid * 2.0) : 0; 
 
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
@@ -234,7 +237,7 @@ export class VoiceTree {
                 const currentDir = seg.dir.clone();
                 end = start.clone().add(currentDir.multiplyScalar(currentLen));
                 
-                if (jitterStrength > 0.05) {
+                if (jitterStrength > 0.01) {
                     end.x += (Math.random() - 0.5) * jitterStrength;
                     end.y += (Math.random() - 0.5) * jitterStrength;
                 }

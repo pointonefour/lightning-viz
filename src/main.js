@@ -50,7 +50,7 @@ function init() {
     const renderScene = new RenderPass(scene, camera);
     const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight), 
-        18.5, 0.6, 0.0
+        25.5, 0.6, 0.0
     );
 
     wavePass = new ShaderPass(BlueWaveShader);
