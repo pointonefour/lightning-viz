@@ -9,36 +9,31 @@ export class Tree {
         
         this.opacity = 0;
         
-        // --- BUFFERS ---
         this.maxSegments = 12000; 
-        
         this.maxDepth = 15; 
         this.treeScale = (0.9 + Math.random() * 0.8); 
         
         this.isFlashing = false;
         this.cooldownTimer = Math.random() * 2.0;
 
-        // --- FIX 1: HIGHER THRESHOLD ---
-        // Old: 0.15. New: 0.55
-        // This ensures the tree ignores quiet sounds and only reacts to peaks.
+        // Standard Sensitivity
         this.triggerThreshold = 0.25 + Math.random() * 0.3;
 
+        // ORIGINAL PURPLE/BLUE PALETTE
         this.palette = [
-            new THREE.Color(0x703BE7), // Red
-            new THREE.Color(0x307D7E), // Blue
-            new THREE.Color(0xAA00FF), // Purple
-            new THREE.Color(0x7F00FF)  // White
+            new THREE.Color(0x703BE7), // Deep Purple
+            new THREE.Color(0x307D7E), // Teal
+            new THREE.Color(0xAA00FF), // Violet
+            new THREE.Color(0x7F00FF)  // Indigo
         ];
 
         this.skeleton = []; 
-        
         this.initMesh();
         this.regenerate();
     }
 
     regenerate() {
         this.skeleton = []; 
-        
         const currentScale = this.treeScale * (0.8 + Math.random() * 0.4);
         const trunkCount = 2 + Math.floor(Math.random() * 2); 
         
@@ -52,7 +47,6 @@ export class Tree {
 
             this.growBranch(-1, null, dir, 0, baseColor, len);
         }
-
         this.updateColorBuffer();
     }
 
@@ -64,12 +58,10 @@ export class Tree {
         const segmentSize = 2.0; 
         const steps = Math.max(2, Math.floor(length / segmentSize));
         const stepLen = length / steps;
-
         let currentParentId = parentId;
         
         for (let i = 0; i < steps; i++) {
             if (this.skeleton.length >= this.maxSegments) break;
-
             const kink = (Math.random() - 0.5) * 0.8; 
             const currentDir = direction.clone().rotateAround(new THREE.Vector2(0,0), kink);
 
@@ -81,7 +73,6 @@ export class Tree {
                 len: stepLen,
                 color: color 
             };
-
             this.skeleton.push(seg);
             currentParentId = seg.id;
         }
@@ -99,7 +90,6 @@ export class Tree {
             const newDir = direction.clone().rotateAround(new THREE.Vector2(0,0), angleOffset);
             const decay = 0.6 + Math.random() * 0.3;
             const newLen = length * decay;
-
             this.growBranch(currentParentId, null, newDir, depth + 1, color, newLen);
         }
     }
@@ -108,11 +98,9 @@ export class Tree {
         const count = this.maxSegments * 2; 
         this.positions = new Float32Array(count * 3);
         this.colors = new Float32Array(count * 3);   
-
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
-        
         geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 500);
 
         this.material = new THREE.LineBasicMaterial({
@@ -130,16 +118,11 @@ export class Tree {
     updateColorBuffer() {
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
-            const r = seg.color.r;
-            const g = seg.color.g;
-            const b = seg.color.b;
-            const tipGlow = (seg.depth / this.maxDepth) * 0.8;
-
             const idx = i * 6; 
             for(let k=0; k<6; k+=3) {
-                this.colors[idx+k]   = Math.min(1, r + tipGlow);
-                this.colors[idx+k+1] = Math.min(1, g + tipGlow);
-                this.colors[idx+k+2] = Math.min(1, b + tipGlow);
+                this.colors[idx+k]   = Math.min(1, seg.color.r + 0.3);
+                this.colors[idx+k+1] = Math.min(1, seg.color.g + 0.3);
+                this.colors[idx+k+2] = Math.min(1, seg.color.b + 0.3);
             }
         }
         this.mesh.geometry.attributes.color.needsUpdate = true;
@@ -148,8 +131,6 @@ export class Tree {
     update(audio, time) {
         if (!this.mesh) return;
 
-        // IMPORTANT: Use currPos if using the wandering border system, 
-        // fallback to basePos if using the static one.
         const anchorPos = this.seedRef.currPos || this.seedRef.basePos; 
 
         if (this.borderSystem.getOwnerId(anchorPos) !== this.seedId) {
@@ -172,13 +153,9 @@ export class Tree {
             if (this.cooldownTimer > 0) {
                 this.cooldownTimer -= dt;
             } else {
-                // --- FIX 2: AUDIO FILTERING ---
-                // "Noise Gate": If audio is below 0.2, consider it 0.
-                // This removes response to background hiss.
                 const bass = audio.bass > 0.2 ? audio.bass : 0;
                 const mid = audio.mid > 0.2 ? audio.mid : 0;
                 const treble = audio.treble > 0.2 ? audio.treble : 0;
-
                 const audioEnergy = (bass * 0.6) + (mid * 0.8) + (treble * 1.5);
                 const flux = (Math.random() - 0.5) * 0.1;
 
@@ -198,37 +175,22 @@ export class Tree {
         this.mesh.visible = true;
         this.material.opacity = this.opacity;
 
-        // --- FIX 3: REDUCED JITTER (SLOWER MOVEMENT) ---
-        // 1. We check if treble is > 0.1. If it is, we use it. If not, jitter is 0.
-        // 2. We REMOVED the + Math.random() part. 
-        // This stops the frantic vibration. It only shakes when the music hits high notes.
         const cleanTreble = audio.treble > 0.1 ? audio.treble : 0;
         const jitterStrength = cleanTreble * 2.0; 
+        const cleanBass = audio.bass > 0.2 ? audio.bass : 0;
 
         const validTips = new Map(); 
         let posIndex = 0;
 
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
-            let start;
-            let isBranchValid = true;
-
-            if (seg.parentId === -1) {
-                start = anchorPos.clone();
-            } else {
-                start = validTips.get(seg.parentId);
-                if (!start) isBranchValid = false; 
-            }
-
-            let end;
-            if (isBranchValid) {
-                // Use Clean Bass (Gated) for stretching
-                const cleanBass = audio.bass > 0.2 ? audio.bass : 0;
+            let start = (seg.parentId === -1) ? anchorPos.clone() : validTips.get(seg.parentId);
+            
+            if (start) {
                 const currentLen = seg.len * (1.0 + cleanBass * 0.15);
                 const currentDir = seg.dir.clone();
-                end = start.clone().add(currentDir.multiplyScalar(currentLen));
+                let end = start.clone().add(currentDir.multiplyScalar(currentLen));
                 
-                // Only apply jitter if there is loud treble
                 if (jitterStrength > 0.05) {
                     end.x += (Math.random() - 0.5) * jitterStrength;
                     end.y += (Math.random() - 0.5) * jitterStrength;
@@ -237,28 +199,31 @@ export class Tree {
                 if (this.borderSystem.getOwnerId(end) !== this.seedId) {
                     end = start.clone().add(currentDir.normalize().multiplyScalar(currentLen * 0.1));
                     if (this.borderSystem.getOwnerId(end) !== this.seedId) {
-                        isBranchValid = false;
+                        // Don't draw if heavily clipped
+                    } else {
+                        validTips.set(seg.id, end); 
+                        this.positions[posIndex++] = start.x;
+                        this.positions[posIndex++] = start.y;
+                        this.positions[posIndex++] = 0;
+                        this.positions[posIndex++] = end.x;
+                        this.positions[posIndex++] = end.y;
+                        this.positions[posIndex++] = 0;
                     }
+                } else {
+                    validTips.set(seg.id, end); 
+                    this.positions[posIndex++] = start.x;
+                    this.positions[posIndex++] = start.y;
+                    this.positions[posIndex++] = 0;
+                    this.positions[posIndex++] = end.x;
+                    this.positions[posIndex++] = end.y;
+                    this.positions[posIndex++] = 0;
                 }
-            }
-
-            if (isBranchValid) {
-                validTips.set(seg.id, end); 
-                this.positions[posIndex++] = start.x;
-                this.positions[posIndex++] = start.y;
-                this.positions[posIndex++] = 0;
-                this.positions[posIndex++] = end.x;
-                this.positions[posIndex++] = end.y;
-                this.positions[posIndex++] = 0;
             } else {
                 for(let k=0; k<6; k++) this.positions[posIndex++] = 0;
             }
         }
         
-        while(posIndex < this.positions.length) {
-            this.positions[posIndex++] = 0;
-        }
-
+        while(posIndex < this.positions.length) this.positions[posIndex++] = 0;
         this.mesh.geometry.attributes.position.needsUpdate = true;
     }
 }

@@ -4,6 +4,8 @@ import { Tree } from './tree.js';
 import { VoiceTree } from './voice.js'; 
 import { SoundAnalyser } from './sound.js';
 import { BlueWaveShader } from './wave.js'; 
+// FIX: Import Streaks, not Shimmer
+import { StreaksShader } from './streaks.js'; 
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -13,11 +15,14 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 let scene, camera, renderer, composer, borderSystem, sound;
 let trees = [];
 let voiceTrees = [];
-let wavePass;
+let wavePass, streaksPass;
 
 let isRedActive = false;
 let isBlueActive = false;
+let isStreakActive = false; 
+
 let blueFade = 0.0;
+let streakFade = 0.0; 
 
 const frustumSize = 100;
 
@@ -48,21 +53,26 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     const renderScene = new RenderPass(scene, camera);
+    
     const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight), 
-        25.5, 0.6, 0.0
+        23.0, 0.5, 0.0
     );
 
     wavePass = new ShaderPass(BlueWaveShader);
-    // Safety check to ensure uniform exists
     if (wavePass.uniforms.uResolution) {
         wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     }
 
+    // FIX: Setup Streaks Pass
+    streaksPass = new ShaderPass(StreaksShader);
+    streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+
     composer = new EffectComposer(renderer);
     composer.addPass(renderScene);
-    composer.addPass(bloomPass);
-    composer.addPass(wavePass); 
+    composer.addPass(streaksPass); // Streaks go before Bloom
+    composer.addPass(bloomPass);   
+    composer.addPass(wavePass);    
 
     borderSystem = new BorderSystem(25, frustumSize * aspect, frustumSize);
 
@@ -85,6 +95,11 @@ function init() {
         if (key === 'b') {
             isBlueActive = !isBlueActive;
         }
+
+        if (key === 's') {
+            isStreakActive = !isStreakActive;
+            console.log("Streaks:", isStreakActive);
+        }
     });
 
     animate();
@@ -101,13 +116,22 @@ function animate() {
     trees.forEach(t => t.update(audioData, time));
     voiceTrees.forEach(vt => vt.update(audioData, time));
 
+    // Update Wave
     if (wavePass) {
         wavePass.uniforms.uTime.value = time;
         wavePass.uniforms.uAudio.value = audioData.bass;
-
-        const target = isBlueActive ? 1.0 : 0.0;
-        blueFade += (target - blueFade) * 0.05; 
+        const targetBlue = isBlueActive ? 1.0 : 0.0;
+        blueFade += (targetBlue - blueFade) * 0.05; 
         wavePass.uniforms.uActive.value = blueFade;
+    }
+
+    // FIX: Update Streaks
+    if (streaksPass) {
+        streaksPass.uniforms.uTreble.value = audioData.treble;
+        
+        const targetStreak = isStreakActive ? 1.0 : 0.0;
+        streakFade += (targetStreak - streakFade) * 0.05; 
+        streaksPass.uniforms.uActive.value = streakFade;
     }
 
     if (composer) composer.render();
@@ -123,13 +147,9 @@ window.addEventListener('resize', () => {
     
     renderer.setSize(window.innerWidth, window.innerHeight);
     
-    // Safety check for composer
     if (composer) composer.setSize(window.innerWidth, window.innerHeight);
-    
-    // Safety check for wavePass
-    if(wavePass && wavePass.uniforms.uResolution) {
-        wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
-    }
+    if(wavePass) wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    if(streaksPass) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 });
 
 init();

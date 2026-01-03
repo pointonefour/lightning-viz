@@ -7,28 +7,27 @@ export class VoiceTree {
         this.borderSystem = borderSystem;
         this.scene = scene;
         
-        this.isActive = false; 
-        this.masterAlpha = 0.0; 
-        
+        // --- CONTROL FLAG (R Key) ---
+        this.isActive = false;
+
         this.opacity = 0;
+        this.maxSegments = 12000; 
         
-        this.maxSegments = 15000; 
-        this.maxDepth = 7; 
+        // HIGHER RECURSION
+        this.maxDepth = 16; 
         
         this.treeScale = (1.0 + Math.random() * 0.8); 
-        
         this.isFlashing = false;
         this.cooldownTimer = Math.random() * 2.0;
 
-        // --- SENSITIVITY CONFIG ---
-        // Threshold is now compared against "Squared Energy"
-        // 0.3 is a good balance for ignoring breath but catching speech
-        this.triggerThreshold = 0.3;
+        // LESS SENSITIVE (Needs louder sound)
+        this.triggerThreshold = 0.65 + Math.random() * 0.2;
 
+        // RED PALETTE
         this.palette = [
-            new THREE.Color(0xFF0000), 
-            new THREE.Color(0xCC0000), 
-            new THREE.Color(0xFF4444), 
+            new THREE.Color(0x980002), 
+            new THREE.Color(0x980002), 
+            new THREE.Color(0x980002), 
             new THREE.Color(0x880000)  
         ];
 
@@ -40,13 +39,11 @@ export class VoiceTree {
     toggle(state) {
         this.isActive = state;
         if (state) {
-            console.log("RED LIGHTNING FADING IN...");
-            this.mesh.visible = true; 
-            this.isFlashing = true;
-            this.opacity = 1.0;
-            this.regenerate();
+            console.log("RED ACTIVE");
+            this.mesh.visible = true;
         } else {
-            console.log("RED LIGHTNING FADING OUT...");
+            this.mesh.visible = false;
+            this.opacity = 0;
         }
     }
 
@@ -58,7 +55,9 @@ export class VoiceTree {
         for(let i=0; i<trunkCount; i++) {
             const angle = Math.random() * Math.PI * 2;
             const dir = new THREE.Vector2(Math.cos(angle), Math.sin(angle));
-            const len = (30 + Math.random() * 15) * currentScale;
+            
+            // LONGER BRANCHES
+            const len = (35 + Math.random() * 20) * currentScale;
             
             const baseColor = this.palette[Math.floor(Math.random() * this.palette.length)].clone();
             baseColor.offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
@@ -71,7 +70,7 @@ export class VoiceTree {
     growBranch(parentId, startPos, direction, depth, color, length) {
         if (this.skeleton.length >= this.maxSegments) return;
         if (depth >= this.maxDepth) return;
-        if (depth > 2 && Math.random() < (depth * 0.1)) return;
+        if (depth > 1 && Math.random() < (depth * 0.08)) return;
 
         const segmentSize = 2.0; 
         const steps = Math.max(2, Math.floor(length / segmentSize));
@@ -95,7 +94,12 @@ export class VoiceTree {
             currentParentId = seg.id;
         }
 
-        let childCount = (depth === 0) ? 2 + Math.floor(Math.random() * 3) : (Math.random() < 0.3 ? 1 : (Math.random() < 0.8 ? 2 : 3));
+        let childCount;
+        const r = Math.random();
+        if (depth === 0) childCount = 2 + Math.floor(Math.random() * 3);
+        else if (r < 0.3) childCount = 1;
+        else if (r < 0.8) childCount = 2;
+        else childCount = 3;
 
         for(let i=0; i<childCount; i++) {
             const spread = 1.6 - (depth * 0.2); 
@@ -131,113 +135,86 @@ export class VoiceTree {
     updateColorBuffer() {
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
-            const r = seg.color.r;
-            const g = seg.color.g;
-            const b = seg.color.b;
-            const tipGlow = (seg.depth / this.maxDepth) * 0.8;
             const idx = i * 6; 
             for(let k=0; k<6; k+=3) {
-                this.colors[idx+k]   = Math.min(1, r + tipGlow);
-                this.colors[idx+k+1] = Math.min(1, g + tipGlow);
-                this.colors[idx+k+2] = Math.min(1, b + tipGlow);
+                this.colors[idx+k] = Math.min(1, seg.color.r + 0.3);
+                this.colors[idx+k+1] = Math.min(1, seg.color.g + 0.3);
+                this.colors[idx+k+2] = Math.min(1, seg.color.b + 0.3);
             }
         }
         this.mesh.geometry.attributes.color.needsUpdate = true;
     }
 
     update(audio, time) {
+        // --- MASTER SWITCH ---
+        if (!this.isActive) {
+            if (this.mesh.visible) this.mesh.visible = false;
+            return;
+        }
         if (!this.mesh) return;
 
-        // --- 1. MASTER FADE LOGIC ---
-        const targetMaster = this.isActive ? 1.0 : 0.0;
-        this.masterAlpha += (targetMaster - this.masterAlpha) * 0.05;
+        const anchorPos = this.seedRef.currPos || this.seedRef.basePos; 
 
-        if (this.masterAlpha < 0.01 && !this.isActive) {
+        // Territory Check same as tree.js
+        if (this.borderSystem.getOwnerId(anchorPos) !== this.seedId) {
+            this.opacity = 0;
+            this.mesh.visible = false;
+            this.isFlashing = false;
+            return;
+        }
+
+        const dt = 0.016; 
+
+        if (this.isFlashing) {
+            this.opacity -= dt * 2.5; 
+            if (this.opacity <= 0) {
+                this.opacity = 0;
+                this.isFlashing = false;
+                this.cooldownTimer = 0.2 + Math.random() * 5.5;
+            }
+        } else {
+            if (this.cooldownTimer > 0) {
+                this.cooldownTimer -= dt;
+            } else {
+                const bass = audio.bass > 0.2 ? audio.bass : 0;
+                const mid = audio.mid > 0.2 ? audio.mid : 0;
+                const treble = audio.treble > 0.2 ? audio.treble : 0;
+                const audioEnergy = (bass * 0.6) + (mid * 0.8) + (treble * 1.5);
+                const flux = (Math.random() - 0.5) * 0.1;
+
+                if (audioEnergy > (this.triggerThreshold + flux)) {
+                    this.isFlashing = true;
+                    this.opacity = 0.6; 
+                    this.regenerate();
+                }
+            }
+        }
+
+        if (this.opacity < 0.01) {
             this.mesh.visible = false;
             return;
         }
+
         this.mesh.visible = true;
+        this.material.opacity = this.opacity;
 
-        // --- 2. LIGHTNING LOGIC ---
-        const anchorPos = this.seedRef.currPos || this.seedRef.basePos; 
-
-        if (this.borderSystem.getOwnerId(anchorPos) !== this.seedId) {
-            this.opacity = 0;
-            this.isFlashing = false;
-        } else {
-            const dt = 0.016; 
-            if (this.isFlashing) {
-                this.opacity -= dt * 2.5; 
-                if (this.opacity <= 0) {
-                    this.opacity = 0;
-                    this.isFlashing = false;
-                    this.cooldownTimer = 0.2 + Math.random() * 1.5;
-                }
-            } else {
-                if (this.cooldownTimer > 0) {
-                    this.cooldownTimer -= dt;
-                } else {
-                    // --- NOISE GATE LOGIC START ---
-                    
-                    // 1. Isolate Mids (Human Voice)
-                    let rawVoice = audio.mid;
-
-                    // 2. Hard Cutoff (The Breath Filter)
-                    // If volume is below 35%, ignore it completely.
-                    // Most breathing is around 0.1 - 0.2
-                    if (rawVoice < 0.35) {
-                        rawVoice = 0;
-                    }
-
-                    // 3. Exponential Boost
-                    // This separates loud sounds from quiet sounds drastically.
-                    // 0.4 * 0.4 = 0.16 (Weak)
-                    // 0.8 * 0.8 = 0.64 (Strong)
-                    const energy = (rawVoice * rawVoice) * 3.0; // Multiplier to bring it back up to threshold levels
-
-                    // 4. Trigger
-                    if (energy > this.triggerThreshold) {
-                        this.isFlashing = true;
-                        this.opacity = 1.0; 
-                        this.regenerate();
-                    }
-                    // --- NOISE GATE LOGIC END ---
-                }
-            }
-        }
-
-        // --- 3. APPLY VISIBILITY ---
-        this.material.opacity = this.opacity * this.masterAlpha;
-
-        if (this.material.opacity < 0.01) return;
-
-        // --- 4. GEOMETRY UPDATES ---
+        const cleanTreble = audio.treble > 0.1 ? audio.treble : 0;
+        const jitterStrength = cleanTreble * 2.0; 
         const cleanBass = audio.bass > 0.2 ? audio.bass : 0;
+
         const validTips = new Map(); 
         let posIndex = 0;
 
-        // Jitter only happens on loud sounds now
-        const jitterStrength = (audio.mid > 0.3) ? (audio.mid * 2.0) : 0; 
-
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
-            let start;
-            let isBranchValid = true;
-
-            if (seg.parentId === -1) {
-                start = anchorPos.clone();
-            } else {
-                start = validTips.get(seg.parentId);
-                if (!start) isBranchValid = false; 
-            }
-
-            let end;
-            if (isBranchValid) {
+            let start = (seg.parentId === -1) ? anchorPos.clone() : validTips.get(seg.parentId);
+            
+            if (start) {
                 const currentLen = seg.len * (1.0 + cleanBass * 0.15);
                 const currentDir = seg.dir.clone();
-                end = start.clone().add(currentDir.multiplyScalar(currentLen));
+                let end = start.clone().add(currentDir.multiplyScalar(currentLen));
                 
-                if (jitterStrength > 0.01) {
+                if (jitterStrength > 0.05) {
                     end.x += (Math.random() - 0.5) * jitterStrength;
                     end.y += (Math.random() - 0.5) * jitterStrength;
                 }
@@ -245,19 +222,25 @@ export class VoiceTree {
                 if (this.borderSystem.getOwnerId(end) !== this.seedId) {
                     end = start.clone().add(currentDir.normalize().multiplyScalar(currentLen * 0.1));
                     if (this.borderSystem.getOwnerId(end) !== this.seedId) {
-                        isBranchValid = false;
+                        // Clipped
+                    } else {
+                        validTips.set(seg.id, end); 
+                        this.positions[posIndex++] = start.x;
+                        this.positions[posIndex++] = start.y;
+                        this.positions[posIndex++] = 0;
+                        this.positions[posIndex++] = end.x;
+                        this.positions[posIndex++] = end.y;
+                        this.positions[posIndex++] = 0;
                     }
+                } else {
+                    validTips.set(seg.id, end); 
+                    this.positions[posIndex++] = start.x;
+                    this.positions[posIndex++] = start.y;
+                    this.positions[posIndex++] = 0;
+                    this.positions[posIndex++] = end.x;
+                    this.positions[posIndex++] = end.y;
+                    this.positions[posIndex++] = 0;
                 }
-            }
-
-            if (isBranchValid) {
-                validTips.set(seg.id, end); 
-                this.positions[posIndex++] = start.x;
-                this.positions[posIndex++] = start.y;
-                this.positions[posIndex++] = 0;
-                this.positions[posIndex++] = end.x;
-                this.positions[posIndex++] = end.y;
-                this.positions[posIndex++] = 0;
             } else {
                 for(let k=0; k<6; k++) this.positions[posIndex++] = 0;
             }
