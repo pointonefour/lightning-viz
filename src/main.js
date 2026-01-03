@@ -6,7 +6,9 @@ import { SoundAnalyser } from './sound.js';
 import { BlueWaveShader } from './wave.js'; 
 import { StreaksShader } from './streaks.js'; 
 import { GlitchShader } from './glitch.js'; 
-import { NumberRain } from './numbers.js'; // 1. IMPORT
+import { NumberRain } from './numbers.js'; 
+import { AnalysisHUD } from './hud.js'; 
+import { InvertShader } from './invert.js';
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -17,7 +19,8 @@ let scene, camera, renderer, composer, borderSystem, sound;
 let trees = [];
 let voiceTrees = [];
 let wavePass, streaksPass, glitchPass;
-let numberRain; // 2. DEFINE VAR
+let numberRain, hud; 
+let invertPass;
 
 let isRedActive = false;
 let isBlueActive = false;
@@ -30,7 +33,6 @@ let glitchFade = 0.0;
 
 const frustumSize = 100;
 
-// ... (Button Code same as before) ...
 const btn = document.createElement('button');
 btn.innerHTML = "IGNITE";
 btn.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:99; padding:15px 30px; cursor:pointer; background:white; border:2px solid white; font-weight:bold; letter-spacing:4px; font-family: monospace; font-size: 1.2rem;";
@@ -47,7 +49,6 @@ function init() {
     scene.background = new THREE.Color(0x000000); 
     sound = new SoundAnalyser(); 
     
-    // ... (Camera/Renderer Setup same as before) ...
     const aspect = window.innerWidth / window.innerHeight;
     camera = new THREE.OrthographicCamera(frustumSize*aspect/-2, frustumSize*aspect/2, frustumSize/2, frustumSize/-2, 0.1, 1000);
     camera.position.z = 10;
@@ -56,10 +57,15 @@ function init() {
     renderer.toneMapping = THREE.ReinhardToneMapping;
     document.body.appendChild(renderer.domElement);
 
-    // 3. INIT NUMBERS
     numberRain = new NumberRain();
+    
+    // 3. INIT HUD
+    hud = new AnalysisHUD();
 
-    // ... (Shader Setup same as before) ...
+    invertPass = new ShaderPass(InvertShader);
+    invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+
+
     const renderScene = new RenderPass(scene, camera);
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 30.0, 0.6, 0.0);
     
@@ -77,6 +83,7 @@ function init() {
     composer.addPass(bloomPass);   
     composer.addPass(wavePass);    
     composer.addPass(glitchPass); 
+    composer.addPass(invertPass);
 
     borderSystem = new BorderSystem(25, frustumSize * aspect, frustumSize);
 
@@ -97,11 +104,10 @@ function init() {
         if (key === 'b') isBlueActive = !isBlueActive;
         if (key === 's') isStreakActive = !isStreakActive;
         if (key === 'g') isGlitchActive = !isGlitchActive;
+        if (key === 'n') numberRain.toggle();
         
-        // 4. 'N' KEY LISTENER
-        if (key === 'n') {
-            numberRain.toggle();
-        }
+        // 4. 'H' KEY LISTENER
+        if (key === 'h') hud.toggle();
     });
 
     animate();
@@ -118,8 +124,22 @@ function animate() {
     trees.forEach(t => t.update(audioData, time));
     voiceTrees.forEach(vt => vt.update(audioData, time));
 
-    // 5. UPDATE NUMBERS
     if(numberRain) numberRain.update(audioData);
+
+     if (invertPass && hud) {
+        // Toggle shader based on HUD activity
+        invertPass.uniforms.uActive.value = hud.isActive ? 1.0 : 0.0;
+        
+        // Pass the array of box positions
+        invertPass.uniforms.uBoxes.value = hud.shaderData;
+    }
+
+    // 5. UPDATE HUD
+    // Pass a combined array of all trees so it can track red lightning too
+    if(hud) {
+        const allTrees = [...trees, ...voiceTrees];
+        hud.update(allTrees, camera, time);
+    }
 
     if (wavePass) {
         wavePass.uniforms.uTime.value = time;
@@ -159,8 +179,11 @@ window.addEventListener('resize', () => {
     if(wavePass && wavePass.uniforms.uResolution) wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     if(streaksPass && streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     
-    // 6. RESIZE NUMBERS
     if(numberRain) numberRain.resize();
+    
+    // 6. RESIZE HUD
+    if(hud) hud.resize();
+     if(invertPass) invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 });
 
 init();
