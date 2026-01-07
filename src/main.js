@@ -3,12 +3,12 @@ import { BorderSystem } from './border.js';
 import { Tree } from './tree.js';
 import { VoiceTree } from './voice.js'; 
 import { SoundAnalyser } from './sound.js';
-import { BlueWaveShader } from './wave.js'; 
 import { StreaksShader } from './streaks.js'; 
 import { GlitchShader } from './glitch.js'; 
-import { NumberRain } from './numbers.js'; 
 import { AnalysisHUD } from './hud.js'; 
 import { InvertShader } from './invert.js';
+import { AudioGrid } from './grid.js';
+import { createStartUI } from './ui1.js';
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -18,31 +18,30 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 let scene, camera, renderer, composer, borderSystem, sound;
 let trees = [];
 let voiceTrees = [];
-let wavePass, streaksPass, glitchPass;
-let numberRain, hud; 
-let invertPass;
+let streaksPass, glitchPass, invertPass;
+let hud, audioGrid;
 
+// Toggle Flags
 let isRedActive = false;
-let isBlueActive = false;
 let isStreakActive = false; 
 let isGlitchActive = false;
 
-let blueFade = 0.0;
+// Fade Values
 let streakFade = 0.0; 
 let glitchFade = 0.0;
 
 const frustumSize = 100;
 
-const btn = document.createElement('button');
+/*const btn = document.createElement('button');
 btn.innerHTML = "IGNITE";
 btn.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:99; padding:15px 30px; cursor:pointer; background:white; border:2px solid white; font-weight:bold; letter-spacing:4px; font-family: monospace; font-size: 1.2rem;";
-document.body.appendChild(btn);
+document.body.appendChild(btn);*/
 
-btn.onclick = async () => {
+/*btn.onclick = async () => {
     await sound.init();
     btn.style.opacity = '0';
     setTimeout(() => btn.remove(), 1000);
-};
+};*/
 
 function init() {
     scene = new THREE.Scene();
@@ -52,39 +51,38 @@ function init() {
     const aspect = window.innerWidth / window.innerHeight;
     camera = new THREE.OrthographicCamera(frustumSize*aspect/-2, frustumSize*aspect/2, frustumSize/2, frustumSize/-2, 0.1, 1000);
     camera.position.z = 10;
+
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.toneMapping = THREE.ReinhardToneMapping;
     document.body.appendChild(renderer.domElement);
 
-    numberRain = new NumberRain();
-    
-    // 3. INIT HUD
+    // 1. Init Helpers
     hud = new AnalysisHUD();
+    audioGrid = new AudioGrid(scene);
 
-    invertPass = new ShaderPass(InvertShader);
-    invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+     createStartUI(sound);
 
-
+    // 2. Setup Post-Processing
     const renderScene = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 30.0, 0.6, 0.0);
-    
-    wavePass = new ShaderPass(BlueWaveShader);
-    if (wavePass.uniforms.uResolution) wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 5.5, 0.6, 0.0);
     
     streaksPass = new ShaderPass(StreaksShader);
     if (streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     
     glitchPass = new ShaderPass(GlitchShader);
+    
+    invertPass = new ShaderPass(InvertShader);
+    invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 
     composer = new EffectComposer(renderer);
     composer.addPass(renderScene);
     composer.addPass(streaksPass); 
     composer.addPass(bloomPass);   
-    composer.addPass(wavePass);    
     composer.addPass(glitchPass); 
     composer.addPass(invertPass);
 
+    // 3. Setup Systems
     borderSystem = new BorderSystem(25, frustumSize * aspect, frustumSize);
 
     borderSystem.seeds.forEach(seed => {
@@ -94,6 +92,7 @@ function init() {
         voiceTrees.push(vTree);
     });
 
+    // 4. Controls
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
         
@@ -101,12 +100,12 @@ function init() {
             isRedActive = !isRedActive;
             voiceTrees.forEach(vt => vt.toggle(isRedActive));
         }
-        if (key === 'b') isBlueActive = !isBlueActive;
         if (key === 's') isStreakActive = !isStreakActive;
         if (key === 'g') isGlitchActive = !isGlitchActive;
-        if (key === 'n') numberRain.toggle();
         
-        // 4. 'H' KEY LISTENER
+        // 'P' toggles Grid
+        if (key === 'p') audioGrid.toggle();
+        // 'H' toggles HUD
         if (key === 'h') hud.toggle();
     });
 
@@ -124,31 +123,21 @@ function animate() {
     trees.forEach(t => t.update(audioData, time));
     voiceTrees.forEach(vt => vt.update(audioData, time));
 
-    if(numberRain) numberRain.update(audioData);
+    // Update Grid
+    if(audioGrid) audioGrid.update(audioData, time);
 
-     if (invertPass && hud) {
-        // Toggle shader based on HUD activity
+    // Update Invert & HUD
+    if (invertPass && hud) {
         invertPass.uniforms.uActive.value = hud.isActive ? 1.0 : 0.0;
-        
-        // Pass the array of box positions
         invertPass.uniforms.uBoxes.value = hud.shaderData;
     }
 
-    // 5. UPDATE HUD
-    // Pass a combined array of all trees so it can track red lightning too
     if(hud) {
         const allTrees = [...trees, ...voiceTrees];
         hud.update(allTrees, camera, time);
     }
 
-    if (wavePass) {
-        wavePass.uniforms.uTime.value = time;
-        wavePass.uniforms.uAudio.value = audioData.bass;
-        const targetBlue = isBlueActive ? 1.0 : 0.0;
-        blueFade += (targetBlue - blueFade) * 0.05; 
-        wavePass.uniforms.uActive.value = blueFade;
-    }
-
+    // Update Streaks
     if (streaksPass) {
         if(streaksPass.uniforms.uTreble) streaksPass.uniforms.uTreble.value = audioData.treble;
         const targetStreak = isStreakActive ? 1.0 : 0.0;
@@ -156,6 +145,7 @@ function animate() {
         streaksPass.uniforms.uActive.value = streakFade;
     }
 
+    // Update Glitch
     if (glitchPass) {
         glitchPass.uniforms.uTime.value = time;
         glitchPass.uniforms.uAudio.value = audioData.bass;
@@ -176,14 +166,11 @@ window.addEventListener('resize', () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     if (composer) composer.setSize(window.innerWidth, window.innerHeight);
-    if(wavePass && wavePass.uniforms.uResolution) wavePass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    
     if(streaksPass && streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    if(invertPass) invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     
-    if(numberRain) numberRain.resize();
-    
-    // 6. RESIZE HUD
     if(hud) hud.resize();
-     if(invertPass) invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 });
 
 init();

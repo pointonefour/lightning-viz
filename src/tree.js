@@ -9,12 +9,12 @@ export class Tree {
         
         this.opacity = 0;
         
-        this.maxSegments = 12000; 
-        this.maxDepth = 15; 
+        this.maxSegments = 120000; 
+        this.maxDepth = 1500; 
         this.treeScale = (0.9 + Math.random() * 0.8); 
         
         this.isFlashing = false;
-        this.cooldownTimer = Math.random() * 2.0;
+        this.cooldownTimer = Math.random() * 0.02;
 
         // Standard Sensitivity
         this.triggerThreshold = 0.25 + Math.random() * 0.3;

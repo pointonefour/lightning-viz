@@ -16,7 +16,7 @@ export class AnalysisHUD {
         this.ctx = this.canvas.getContext('2d');
         
         this.targets = []; 
-        this.maxTargets = 80; // Massive Density
+        this.maxTargets = 80; 
         
         this.shaderData = new Array(10).fill().map(() => new THREE.Vector3(-1, -1, 0));
 
@@ -55,19 +55,26 @@ export class AnalysisHUD {
 
         ctx.clearRect(0, 0, w, h);
 
-        // --- AGGRESSIVE SPAWN ---
-        // Try 15 times per frame to find a target
+        // --- SPAWN ---
         for (let i = 0; i < 15; i++) {
             if (this.targets.length >= this.maxTargets) break;
             const randomTree = allTrees[Math.floor(Math.random() * allTrees.length)];
             
-            // Detect ANYTHING that isn't fully invisible (> 0.01)
             if (randomTree.opacity > 0.01 && randomTree.skeleton.length > 0) {
-                // Pick ANY segment, not just roots
                 const seg = randomTree.skeleton[Math.floor(Math.random() * randomTree.skeleton.length)];
                 
                 const seedPos = randomTree.seedRef.currPos || randomTree.seedRef.basePos;
-                const exactPos = new THREE.Vector3(seedPos.x + seg.dir.x * 5, seedPos.y + seg.dir.y * 5, 0);
+                
+                // --- SPREAD FIX ---
+                // Before: Multiplied by fixed 5 (Too clumped)
+                // Now: Multiplies by random 5 to 35 (Spreads them out along the bolt)
+                const spreadDistance = 5 + Math.random() * 30;
+
+                const exactPos = new THREE.Vector3(
+                    seedPos.x + seg.dir.x * spreadDistance, 
+                    seedPos.y + seg.dir.y * spreadDistance, 
+                    0
+                );
                 
                 const lifespan = 10 + Math.random() * 15; 
 
@@ -82,11 +89,11 @@ export class AnalysisHUD {
             }
         }
 
-        // --- WHITE STYLE ---
+        // --- DRAW ---
         ctx.lineWidth = 2; 
         ctx.font = 'bold 12px monospace'; 
         ctx.shadowBlur = 8; 
-        ctx.shadowColor = "white"; // White Glow
+        ctx.shadowColor = "white"; 
 
         this.targets = this.targets.filter(t => t.life > 0);
         let shaderIndex = 0;
@@ -109,7 +116,6 @@ export class AnalysisHUD {
             const s = t.size; 
             const halfS = s / 2;
             
-            // WHITE COLOR
             const alpha = (0.7 + Math.random() * 0.3) * opacity;
             const col = `rgba(255, 255, 255, ${alpha})`;
             
@@ -126,10 +132,11 @@ export class AnalysisHUD {
                 const pPos = this.toScreenXY(prev.pos3D, camera);
                 if (pPos.visible) {
                     const dist = Math.hypot(x - pPos.x, y - pPos.y);
-                    if (dist < 300) {
+                    // Increased connection distance slightly since we spread them out
+                    if (dist < 350) { 
                         ctx.beginPath();
                         ctx.lineWidth = 1;
-                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.4})`; // Faint white lines
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.4})`; 
                         ctx.moveTo(x, y);
                         ctx.lineTo(pPos.x, pPos.y);
                         ctx.stroke();
