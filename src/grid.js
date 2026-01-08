@@ -4,7 +4,7 @@ export class AudioGrid {
     constructor(scene) {
         this.isActive = false;
 
-        const geometry = new THREE.PlaneGeometry(50, 50, 20, 10);
+        const geometry = new THREE.PlaneGeometry(50, 50, 20, 20);
 
         const material = new THREE.ShaderMaterial({
             wireframe: true,
@@ -13,52 +13,63 @@ export class AudioGrid {
             uniforms: {
                 uBass: { value: 0 },
                 uMid: { value: 0 },
-                uHigh: { value: 0 }, // New uniform for Highs
                 uTreble: { value: 0 },
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color(0.1, 0.1, 0.2) } 
+                uColor: { value: new THREE.Color(0.0, 0.1, 0.1) } 
             },
             vertexShader: `
                 uniform float uBass;
                 uniform float uMid;
-                uniform float uHigh;
                 uniform float uTreble;
                 uniform float uTime;
                 varying float vElevation;
 
+                float random(vec2 st) {
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
+
                 void main() {
                     vec3 pos = position;
                     
-                    // --- 4 CORNER MAPPING ---
-                    // UV coords go from 0 to 1
-                    // 0,0 is Bottom-Left. 1,1 is Top-Right.
+                    // --- 1. CENTER MASK ---
+                    float dist = distance(uv, vec2(0.5));
+                    float mask = 1.0 - smoothstep(0.0, 0.55, dist);
 
-                    // 1. Top-Right (Bass) -> uv.x * uv.y
-                    float bassZone = smoothstep(0.2, 1.0, uv.x * uv.y);
+                    // --- 2. SMOOTH RANDOM TRANSITION ---
+                    // Instead of snapping, we calculate "Now" and "Next" and blend them.
                     
-                    // 2. Top-Left (Mids) -> (1-x) * y
-                    float midZone = smoothstep(0.2, 1.0, (1.0 - uv.x) * uv.y);
-
-                    // 3. Bottom-Right (Highs) -> x * (1-y)
-                    float highZone = smoothstep(0.2, 1.0, uv.x * (1.0 - uv.y));
-
-                    // 4. Bottom-Left (Treble) -> (1-x) * (1-y)
-                    float trebleZone = smoothstep(0.2, 1.0, (1.0 - uv.x) * (1.0 - uv.y));
-
-                    // --- DISPLACEMENT ---
-                    // Each zone has a slightly different wave pattern
+                    float speed = 2.0; // How fast spikes change location
+                    float t = uTime * speed;
                     
-                    // Bass: Big Slow Rolling Hill
-                    pos.z += uBass * bassZone * sin(pos.x * 0.1 + uTime) * 20.0;
+                    float tick1 = floor(t);       // Current State (e.g., 1.0)
+                    float tick2 = tick1 + 1.0;    // Next State    (e.g., 2.0)
+                    float progress = fract(t);    // 0.0 -> 1.0 transition
+                    
+                    // Use smoothstep to ease the transition (Slow start, slow end)
+                    float mixVal = smoothstep(0.0, 1.0, progress);
 
-                    // Mids: Medium Ripple
-                    pos.z += uMid * midZone * sin(pos.y * 0.3 - uTime * 2.0) * 15.0;
+                    // Calculate Random Noise for BOTH states
+                    float rnd1 = random(uv + vec2(tick1));
+                    float rnd2 = random(uv + vec2(tick2));
 
-                    // Highs: Fast Choppy Wave
-                    pos.z += uHigh * highZone * sin(pos.x * 0.5 + uTime * 5.0) * 10.0;
+                    // --- 3. SELECTION ---
+                    // Select spikes for state 1 and state 2 independently
+                    // Using smoothstep(0.7, 1.0) creates a tapered spike instead of a block
+                    float spike1 = smoothstep(0.1, 1.0, rnd1);
+                    float spike2 = smoothstep(0.1, 1.0, rnd2);
 
-                    // Treble: Spiky Noise
-                    pos.z += uTreble * trebleZone * fract(sin(dot(uv, vec2(12.9, 78.2)))*43758.5) * 8.0;
+                    // BLEND the two spike maps together
+                    float currentSpike = mix(spike1, spike2, mixVal);
+
+                    // --- 4. AUDIO ENERGY ---
+                    float energy = (uBass * 1.0) + (uMid * 10.0) + (uTreble * 10.0);
+
+                    // --- 5. APPLY ---
+                    // Spikes grow up based on audio energy
+                    pos.z += currentSpike * (5.0 + energy) * mask;
+
+                    // Small idle wave
+                    pos.z += sin(pos.x * 0.2 + uTime) * 0.5;
 
                     vElevation = pos.z; 
 
@@ -70,7 +81,8 @@ export class AudioGrid {
                 varying float vElevation;
 
                 void main() {
-                    gl_FragColor = vec4(uColor, 0.15);
+                    float alpha = 0.2 + smoothstep(0.0, 10.0, vElevation) * 0.8;
+                    gl_FragColor = vec4(uColor, alpha);
                 }
             `
         });
@@ -92,18 +104,8 @@ export class AudioGrid {
         if (!this.isActive) return;
 
         this.mesh.material.uniforms.uTime.value = time;
-        
-        // NOISE GATE (0.15)
-        const gate = (val) => val > 0.05 ? (val - 0.05) * 10.0 : 0;
-
-        // Split "Treble" into Highs and Super-Highs just for visual variety
-        // Since we only get 3 bands from sound.js usually, we reuse treble for "High"
-        // or split it if sound.js supported it. 
-        // For now: Bass=Bass, Mid=Mid, High=Treble*0.7, Treble=Treble.
-        
-        this.mesh.material.uniforms.uBass.value = gate(audio.bass);
-        this.mesh.material.uniforms.uMid.value = gate(audio.mid);
-        this.mesh.material.uniforms.uHigh.value = gate(audio.treble * 0.8);
-        this.mesh.material.uniforms.uTreble.value = gate(audio.treble);
+        this.mesh.material.uniforms.uBass.value = (audio.bass || 0) * 5.0;
+        this.mesh.material.uniforms.uMid.value = (audio.mid || 0) * 5.0;
+        this.mesh.material.uniforms.uTreble.value = (audio.treble || 0) * 5.0;
     }
 }

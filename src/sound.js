@@ -6,111 +6,83 @@ export class SoundAnalyser {
         this.analyser = null;
         this.dataArray = null;
         this.isInitialized = false;
-        
-        this.source = null;        // The audio connection
-        this.activeStream = null;  // The actual MediaStream (Mic or System)
+        this.source = null;
+        this.activeStream = null;
     }
 
-    // 1. Setup Audio Engine
     setupContext() {
         if (!this.context) {
             this.context = new (window.AudioContext || window.webkitAudioContext)();
             this.analyser = this.context.createAnalyser();
-            this.analyser.fftSize = 512;
+            this.analyser.fftSize = 512; 
             this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
         }
-        // Ensure context is running (sometimes it suspends)
-        if (this.context.state === 'suspended') {
-            this.context.resume();
-        }
+        if (this.context.state === 'suspended') this.context.resume();
     }
 
-    // 2. THE KILL SWITCH
-    // This stops the previous stream completely.
-    // It makes the "Stop Sharing" banner disappear from Chrome.
     stopPrevious() {
-        // Disconnect audio nodes
-        if (this.source) {
-            this.source.disconnect();
-            this.source = null;
-        }
-
-        // Kill the stream (Mic or System)
+        if (this.source) { this.source.disconnect(); this.source = null; }
         if (this.activeStream) {
             this.activeStream.getTracks().forEach(track => track.stop());
             this.activeStream = null;
         }
     }
 
-    // 3. Microphone Logic
     async initMic() {
         this.setupContext();
-        this.stopPrevious(); // Kill System audio if active
-
+        this.stopPrevious();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.activeStream = stream; // Save ref to stop it later
-
+            this.activeStream = stream;
             this.source = this.context.createMediaStreamSource(stream);
             this.source.connect(this.analyser);
-            
             this.isInitialized = true;
-            console.log("MODE: Microphone");
-        } catch (err) {
-            console.error("Mic Error:", err);
-        }
+            console.log("Microphone Active");
+        } catch (err) { console.error(err); }
     }
 
-    // 4. System Logic
     async initSystem() {
         this.setupContext();
-        this.stopPrevious(); // Kill Mic if active
-
+        this.stopPrevious();
         try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ 
-                video: true, // Video required for prompt
-                audio: true 
-            });
-            this.activeStream = stream; // Save ref to stop it later
-
-            // Check if user shared audio
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            this.activeStream = stream;
             const audioTrack = stream.getAudioTracks()[0];
-            if (!audioTrack) {
-                alert("You didn't check 'Share Audio'. Try again.");
-                this.stopPrevious();
-                return;
-            }
-
-            // Create pure audio stream
+            if (!audioTrack) { alert("Share Audio!"); return; }
             const audioStream = new MediaStream([audioTrack]);
             this.source = this.context.createMediaStreamSource(audioStream);
             this.source.connect(this.analyser);
-            
             this.isInitialized = true;
-            console.log("MODE: System Audio");
-
-            // Stop the video track immediately (we don't need the video feed)
-            // But KEEP the audio track alive.
+            console.log("System Audio Active");
             stream.getVideoTracks().forEach(t => t.stop());
-
-        } catch (err) {
-            console.error("System Error:", err);
-        }
+        } catch (err) { console.error(err); }
     }
 
     getData() {
-        if (!this.isInitialized) return { bass: 0, mid: 0, treble: 0 };
+        if (!this.isInitialized) return { bass: 0, lowMid: 0, highMid: 0, treble: 0 };
         
         this.analyser.getByteFrequencyData(this.dataArray);
 
-        let b = 0; for(let i=0; i<10; i++) b += this.dataArray[i];
-        let m = 0; for(let i=10; i<100; i++) m += this.dataArray[i];
-        let t = 0; for(let i=100; i<200; i++) t += this.dataArray[i];
+        // --- 4 BAND SPLIT ---
+        // Array length is usually 256.
+        
+        // 1. Deep Bass (0-5) ~0-100Hz
+        let b = 0; for(let i=0; i<5; i++) b += this.dataArray[i];
+        
+        // 2. Low Mids / Body (6-30) ~100-600Hz
+        let lm = 0; for(let i=6; i<30; i++) lm += this.dataArray[i];
+        
+        // 3. High Mids / Vocals (31-100) ~600-2kHz
+        let hm = 0; for(let i=31; i<100; i++) hm += this.dataArray[i];
+        
+        // 4. Treble / Air (101-200) ~2k-10kHz
+        let t = 0; for(let i=101; i<200; i++) t += this.dataArray[i];
 
         return {
-            bass: (b/10)/255,
-            mid: (m/90)/255,
-            treble: (t/100)/255
+            bass: (b/5)/255,
+            lowMid: (lm/24)/255,
+            highMid: (hm/69)/255,
+            treble: (t/99)/255
         };
     }
 }

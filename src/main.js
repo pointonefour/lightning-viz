@@ -9,6 +9,8 @@ import { AnalysisHUD } from './hud.js';
 import { InvertShader } from './invert.js';
 import { AudioGrid } from './grid.js';
 import { createStartUI } from './ui1.js';
+//import { FlowField } from './FlowField.js'; 
+import { ChoirBorder } from './ChoirBorder.js';
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -20,6 +22,8 @@ let trees = [];
 let voiceTrees = [];
 let streaksPass, glitchPass, invertPass;
 let hud, audioGrid;
+//let flowField;
+let choirBorder;
 
 // Toggle Flags
 let isRedActive = false;
@@ -31,7 +35,7 @@ let streakFade = 0.0;
 let glitchFade = 0.0;
 
 const frustumSize = 100;
-
+const clock = new THREE.Clock();
 /*const btn = document.createElement('button');
 btn.innerHTML = "IGNITE";
 btn.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:99; padding:15px 30px; cursor:pointer; background:white; border:2px solid white; font-weight:bold; letter-spacing:4px; font-family: monospace; font-size: 1.2rem;";
@@ -60,13 +64,18 @@ function init() {
     // 1. Init Helpers
     hud = new AnalysisHUD();
     audioGrid = new AudioGrid(scene);
-
-     createStartUI(sound);
+    
+    //flowField = new FlowField(scene);
+    choirBorder = new ChoirBorder(scene);
+    createStartUI(sound);
 
     // 2. Setup Post-Processing
     const renderScene = new RenderPass(scene, camera);
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 5.5, 0.6, 0.0);
     
+    // --- DELETE THE LINE THAT WAS HERE ---
+    // const flowField = new FlowField(scene);  <-- THIS WAS THE PROBLEM
+
     streaksPass = new ShaderPass(StreaksShader);
     if (streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     
@@ -116,12 +125,20 @@ function animate() {
     requestAnimationFrame(animate);
     
     const audioData = sound.getData(); 
-    const time = Date.now() * 0.006; 
+    //const time = Date.now() * 0.006; 
+    const time = clock.getElapsedTime();
+
+    const legacyAudio = {
+        bass: audioData.bass,
+        mid: (audioData.lowMid + audioData.highMid) / 2, // Average the mids
+        treble: audioData.treble
+    };
+
+    if(audioGrid) audioGrid.update(audioData, time);
     
-    if (borderSystem) borderSystem.update(time, audioData);
-    
-    trees.forEach(t => t.update(audioData, time));
-    voiceTrees.forEach(vt => vt.update(audioData, time));
+    if (borderSystem) borderSystem.update(time, legacyAudio);
+    trees.forEach(t => t.update(legacyAudio, time));
+    voiceTrees.forEach(vt => vt.update(legacyAudio, time));
 
     // Update Grid
     if(audioGrid) audioGrid.update(audioData, time);
@@ -131,7 +148,15 @@ function animate() {
         invertPass.uniforms.uActive.value = hud.isActive ? 1.0 : 0.0;
         invertPass.uniforms.uBoxes.value = hud.shaderData;
     }
+     if (choirBorder) {
+        choirBorder.update(audioData, time);
+    }
 
+    /*if(flowField) {
+    
+    flowField.update(audioData, time);
+}*/
+    
     if(hud) {
         const allTrees = [...trees, ...voiceTrees];
         hud.update(allTrees, camera, time);
@@ -139,7 +164,7 @@ function animate() {
 
     // Update Streaks
     if (streaksPass) {
-        if(streaksPass.uniforms.uTreble) streaksPass.uniforms.uTreble.value = audioData.treble;
+        if(streaksPass.uniforms.uTreble) streaksPass.uniforms.uTreble.value = legacyAudio.treble;
         const targetStreak = isStreakActive ? 1.0 : 0.0;
         streakFade += (targetStreak - streakFade) * 0.05; 
         streaksPass.uniforms.uActive.value = streakFade;
@@ -148,7 +173,7 @@ function animate() {
     // Update Glitch
     if (glitchPass) {
         glitchPass.uniforms.uTime.value = time;
-        glitchPass.uniforms.uAudio.value = audioData.bass;
+        glitchPass.uniforms.uAudio.value =  legacyAudio.bass;
         const targetGlitch = isGlitchActive ? 1.0 : 0.0;
         glitchFade += (targetGlitch - glitchFade) * 0.1; 
         glitchPass.uniforms.uActive.value = glitchFade;
