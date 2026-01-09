@@ -4,12 +4,14 @@ export class ChoirBorder {
     constructor(scene) {
         // --- CONFIGURATION ---
         const particleCount = 16000; 
-        const size = 50; 
+        const size = 60; 
         const half = size / 2;
         
         const positions = new Float32Array(particleCount * 3);
         const randoms = new Float32Array(particleCount);
-        const directions = new Float32Array(particleCount * 3);
+        
+        // Note: We don't even need 'directions' array anymore 
+        // because we use the position itself to determine direction.
 
         for (let i = 0; i < particleCount; i++) {
             const i3 = i * 3;
@@ -17,7 +19,6 @@ export class ChoirBorder {
             const t = Math.random(); 
 
             let x, y, z;
-            let dirX, dirY, dirZ;
 
             // Tight line thickness (0.2)
             const thick = (Math.random() - 0.5) * 0.2; 
@@ -26,22 +27,18 @@ export class ChoirBorder {
                 case 0: // TOP
                     x = (t * size) - half;
                     y = half + thick;
-                    dirX = 0; dirY = 1; dirZ = 0;
                     break;
                 case 1: // RIGHT
                     x = half + thick;
                     y = (t * size) - half;
-                    dirX = 1; dirY = 0; dirZ = 0;
                     break;
                 case 2: // BOTTOM
                     x = (t * size) - half;
                     y = -half + thick;
-                    dirX = 0; dirY = -1; dirZ = 0;
                     break;
                 case 3: // LEFT
                     x = -half + thick;
                     y = (t * size) - half;
-                    dirX = -1; dirY = 0; dirZ = 0;
                     break;
             }
             
@@ -52,16 +49,11 @@ export class ChoirBorder {
             positions[i3+1] = y;
             positions[i3+2] = z;
 
-            directions[i3] = dirX;
-            directions[i3+1] = dirY;
-            directions[i3+2] = 0; 
-
             randoms[i] = Math.random();
         }
 
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('aDirection', new THREE.BufferAttribute(directions, 3));
         geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
 
         const material = new THREE.ShaderMaterial({
@@ -77,12 +69,11 @@ export class ChoirBorder {
                 uniform float uTime;
                 uniform float uAudio;
                 
-                attribute vec3 aDirection;
                 attribute float aRandom;
                 
                 varying float vAlpha;
 
-                // --- 1. NOISE FUNCTIONS (Pseudo-Random) ---
+                // Noise Functions
                 float hash(vec2 p) {
                     return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
                 }
@@ -98,49 +89,51 @@ export class ChoirBorder {
                 void main() {
                     vec3 pos = position;
 
-                    // --- 2. CALCULATE UNEVEN MASK ---
-                    // We use the position (x,y) to sample the noise.
-                    // We add uTime so the noise "scrolls" along the border.
+                    // --- 1. NOISY ERUPTION MASK ---
                     float noiseScale = 0.05; 
-                    float noiseSpeed = uTime * 2.0;
-                    
-                    // This returns 0.0 to 1.0 based on position
+                    float noiseSpeed = uTime * 3.0;
                     float noiseVal = noise(vec2(pos.x * noiseScale + noiseSpeed, pos.y * noiseScale));
-                    
-                    // Make it harsher: 
-                    // smoothstep(0.3, 0.7, ...) means areas below 0.3 stay flat, areas above 0.7 explode fully.
                     float eruptionMask = smoothstep(0.3, 0.8, noiseVal);
 
-                    // --- 3. VORTICITY LOGIC ---
-                    vec3 perp = vec3(-aDirection.y, aDirection.x, 0.0);
+                    // --- 2. EXPANSION (SCALING METHOD) ---
+                    // Instead of adding a vector, we calculate a Scale Factor.
+                    // This ensures corners move diagonally and stay connected.
                     
-                    // Swirl angle
-                    float curlAngle = (uTime * 3.0) + (aRandom * 10.0);
+                    // Base expansion + Noisy Eruption
+                    float expansionStrength = uAudio * 0.8 * eruptionMask; 
+                    
+                    // Calculate the "Move Out" vector based on position from center (0,0)
+                    // We treat the Z axis separately so it doesn't get huge.
+                    vec3 radialMove = vec3(pos.x, pos.y, 0.0) * expansionStrength;
+
+
+                    // --- 3. VORTICITY (CURL) ---
+                    // We still want the swirl. We calculate it based on the radial vector.
+                    
+                    // Normalize radial vector to get direction
+                    vec3 dir = normalize(vec3(pos.x, pos.y, 0.0));
+                    
+                    // Calculate perpendicular (Tangent) vector for swirl
+                    vec3 perp = vec3(-dir.y, dir.x, 0.0);
+                    
+                    float curlAngle = (uTime * 3.0) + (aRandom * 50.0);
                     float curlStrength = sin(curlAngle); 
                     
-                    // --- 4. APPLY FORCES ---
-                    // Multiply everything by our new 'eruptionMask'
-                    
-                    // Increased max distance to 40.0 because the mask hides some parts
-                    float expansion = uAudio * 40.0 * eruptionMask; 
+                    // The curl amount depends on how far out we expanded
+                    vec3 swirlMove = perp * curlStrength * (length(radialMove) * 0.5);
 
-                    vec3 moveOut = aDirection * expansion;
-                    vec3 moveSwirl = perp * curlStrength * (expansion * 0.4); 
 
-                    // Apply displacement
-                    pos += moveOut + moveSwirl;
+                    // --- 4. APPLY ---
+                    pos += radialMove + swirlMove;
                     
-                    // Add chaotic Z-depth (also masked by eruption)
-                    pos.z += sin(uTime * 5.0 + aRandom * 20.0) * expansion * 0.2;
+                    // Chaotic Z-depth
+                    pos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
 
                     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                     
                     gl_PointSize = (2.0 + (aRandom * 3.0)) * (30.0 / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
 
-                    // Alpha Logic
-                    // Base visibility (0.1) + Audio intensity.
-                    // The eruption mask makes the exploding parts brighter.
                     vAlpha = 0.1 + (uAudio * 0.5) + (eruptionMask * uAudio * 0.5);
                 }
             `,
@@ -169,8 +162,7 @@ export class ChoirBorder {
     }
 
     update(audio, time) {
-        // High Mids + Treble focus
-        const target = (audio.highMid * 0.7) + (audio.treble * 0.3);
+        const target = (audio.highMid * 0.6) + (audio.treble * 0.4);
         
         const attack = 0.1; 
         const decay = 0.03; 
