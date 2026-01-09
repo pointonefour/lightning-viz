@@ -38,7 +38,7 @@ export class AudioGrid {
                     // --- 2. SMOOTH RANDOM TRANSITION ---
                     // Instead of snapping, we calculate "Now" and "Next" and blend them.
                     
-                    float speed = 2.0; // How fast spikes change location
+                    float speed = 1.2; // How fast spikes change location
                     float t = uTime * speed;
                     
                     float tick1 = floor(t);       // Current State (e.g., 1.0)
@@ -62,14 +62,14 @@ export class AudioGrid {
                     float currentSpike = mix(spike1, spike2, mixVal);
 
                     // --- 4. AUDIO ENERGY ---
-                    float energy = (uBass * 1.0) + (uMid * 10.0) + (uTreble * 10.0);
+                    float energy = (uBass * 4.0) + (uMid * 10.0) + (uTreble * 10.0);
 
                     // --- 5. APPLY ---
                     // Spikes grow up based on audio energy
-                    pos.z += currentSpike * (5.0 + energy) * mask;
+                    pos.z += currentSpike * (2.0 + energy) * mask;
 
                     // Small idle wave
-                    pos.z += sin(pos.x * 0.2 + uTime) * 0.5;
+                    pos.z += sin(pos.x * 0.01 + uTime) * 0.1;
 
                     vElevation = pos.z; 
 

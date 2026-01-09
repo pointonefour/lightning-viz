@@ -7,29 +7,43 @@ export class Tree {
         this.borderSystem = borderSystem;
         this.scene = scene;
         
+        // --- VISIBILITY STATE ---
+        this.isActive = true; 
+        this.masterAlpha = 1.0; 
+
         this.opacity = 0;
         
         this.maxSegments = 120000; 
-        this.maxDepth = 1500; 
+        this.maxDepth = 15; 
         this.treeScale = (0.9 + Math.random() * 0.8); 
         
         this.isFlashing = false;
-        this.cooldownTimer = Math.random() * 0.02;
+        this.cooldownTimer = Math.random() * 2.0;
 
         // Standard Sensitivity
         this.triggerThreshold = 0.25 + Math.random() * 0.3;
 
         // ORIGINAL PURPLE/BLUE PALETTE
         this.palette = [
-            new THREE.Color(0x703BE7), // Deep Purple
-            new THREE.Color(0x307D7E), // Teal
-            new THREE.Color(0xAA00FF), // Violet
-            new THREE.Color(0x7F00FF)  // Indigo
+            new THREE.Color(0x703BE7), 
+            new THREE.Color(0x307D7E), 
+            new THREE.Color(0xAA00FF), 
+            new THREE.Color(0x7F00FF)
         ];
 
         this.skeleton = []; 
         this.initMesh();
         this.regenerate();
+    }
+
+    toggle(state) {
+        this.isActive = state;
+        if (state) {
+            this.mesh.visible = true;
+            this.isFlashing = true;
+            this.opacity = 1.0;
+            this.regenerate();
+        }
     }
 
     regenerate() {
@@ -64,7 +78,6 @@ export class Tree {
             if (this.skeleton.length >= this.maxSegments) break;
             const kink = (Math.random() - 0.5) * 0.8; 
             const currentDir = direction.clone().rotateAround(new THREE.Vector2(0,0), kink);
-
             const seg = {
                 id: this.skeleton.length,
                 parentId: currentParentId,
@@ -118,6 +131,9 @@ export class Tree {
     updateColorBuffer() {
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
+            const r = seg.color.r;
+            const g = seg.color.g;
+            const b = seg.color.b;
             const idx = i * 6; 
             for(let k=0; k<6; k+=3) {
                 this.colors[idx+k]   = Math.min(1, seg.color.r + 0.3);
@@ -131,13 +147,23 @@ export class Tree {
     update(audio, time) {
         if (!this.mesh) return;
 
+        // --- MASTER FADE LOGIC (The Only New Part) ---
+        const targetMaster = this.isActive ? 1.0 : 0.0;
+        this.masterAlpha += (targetMaster - this.masterAlpha) * 0.05; // Fade speed
+
+        if (this.masterAlpha < 0.01 && !this.isActive) {
+            this.mesh.visible = false;
+            return;
+        }
+        this.mesh.visible = true;
+
         const anchorPos = this.seedRef.currPos || this.seedRef.basePos; 
 
         if (this.borderSystem.getOwnerId(anchorPos) !== this.seedId) {
             this.opacity = 0;
             this.mesh.visible = false;
             this.isFlashing = false;
-            return;
+            return; // Don't process geometry if hidden
         }
 
         const dt = 0.016; 
@@ -167,13 +193,10 @@ export class Tree {
             }
         }
 
-        if (this.opacity < 0.01) {
-            this.mesh.visible = false;
-            return;
-        }
+        // Apply Fade
+        this.material.opacity = this.opacity * this.masterAlpha;
 
-        this.mesh.visible = true;
-        this.material.opacity = this.opacity;
+        if (this.material.opacity < 0.01) return;
 
         const cleanTreble = audio.treble > 0.1 ? audio.treble : 0;
         const jitterStrength = cleanTreble * 2.0; 
@@ -184,12 +207,21 @@ export class Tree {
 
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
-            let start = (seg.parentId === -1) ? anchorPos.clone() : validTips.get(seg.parentId);
-            
-            if (start) {
+            let start;
+            let isBranchValid = true;
+
+            if (seg.parentId === -1) {
+                start = anchorPos.clone();
+            } else {
+                start = validTips.get(seg.parentId);
+                if (!start) isBranchValid = false; 
+            }
+
+            let end;
+            if (isBranchValid) {
                 const currentLen = seg.len * (1.0 + cleanBass * 0.15);
                 const currentDir = seg.dir.clone();
-                let end = start.clone().add(currentDir.multiplyScalar(currentLen));
+                end = start.clone().add(currentDir.multiplyScalar(currentLen));
                 
                 if (jitterStrength > 0.05) {
                     end.x += (Math.random() - 0.5) * jitterStrength;
@@ -199,31 +231,28 @@ export class Tree {
                 if (this.borderSystem.getOwnerId(end) !== this.seedId) {
                     end = start.clone().add(currentDir.normalize().multiplyScalar(currentLen * 0.1));
                     if (this.borderSystem.getOwnerId(end) !== this.seedId) {
-                        // Don't draw if heavily clipped
-                    } else {
-                        validTips.set(seg.id, end); 
-                        this.positions[posIndex++] = start.x;
-                        this.positions[posIndex++] = start.y;
-                        this.positions[posIndex++] = 0;
-                        this.positions[posIndex++] = end.x;
-                        this.positions[posIndex++] = end.y;
-                        this.positions[posIndex++] = 0;
+                        isBranchValid = false;
                     }
-                } else {
-                    validTips.set(seg.id, end); 
-                    this.positions[posIndex++] = start.x;
-                    this.positions[posIndex++] = start.y;
-                    this.positions[posIndex++] = 0;
-                    this.positions[posIndex++] = end.x;
-                    this.positions[posIndex++] = end.y;
-                    this.positions[posIndex++] = 0;
                 }
+            }
+
+            if (isBranchValid) {
+                validTips.set(seg.id, end); 
+                this.positions[posIndex++] = start.x;
+                this.positions[posIndex++] = start.y;
+                this.positions[posIndex++] = 0;
+                this.positions[posIndex++] = end.x;
+                this.positions[posIndex++] = end.y;
+                this.positions[posIndex++] = 0;
             } else {
                 for(let k=0; k<6; k++) this.positions[posIndex++] = 0;
             }
         }
         
-        while(posIndex < this.positions.length) this.positions[posIndex++] = 0;
+        while(posIndex < this.positions.length) {
+            this.positions[posIndex++] = 0;
+        }
+
         this.mesh.geometry.attributes.position.needsUpdate = true;
     }
 }

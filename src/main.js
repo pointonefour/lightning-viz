@@ -27,6 +27,7 @@ let choirBorder;
 
 // Toggle Flags
 let isRedActive = false;
+let isTreeActive = true;
 let isStreakActive = false; 
 let isGlitchActive = false;
 
@@ -36,6 +37,8 @@ let glitchFade = 0.0;
 
 const frustumSize = 100;
 const clock = new THREE.Clock();
+
+
 /*const btn = document.createElement('button');
 btn.innerHTML = "IGNITE";
 btn.style.cssText = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:99; padding:15px 30px; cursor:pointer; background:white; border:2px solid white; font-weight:bold; letter-spacing:4px; font-family: monospace; font-size: 1.2rem;";
@@ -109,6 +112,12 @@ function init() {
             isRedActive = !isRedActive;
             voiceTrees.forEach(vt => vt.toggle(isRedActive));
         }
+        if (key === 't') {
+            isTreeActive = !isTreeActive;
+            // Loop through all standard trees and toggle them
+            trees.forEach(t => t.toggle(isTreeActive));
+            console.log("Trees Toggled:", isTreeActive);
+        }
         if (key === 's') isStreakActive = !isStreakActive;
         if (key === 'g') isGlitchActive = !isGlitchActive;
         
@@ -116,6 +125,8 @@ function init() {
         if (key === 'p') audioGrid.toggle();
         // 'H' toggles HUD
         if (key === 'h') hud.toggle();
+
+
     });
 
     animate();
