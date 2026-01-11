@@ -4225,7 +4225,7 @@ void main() {
 
                     gl_FragColor = vec4(uColor, alpha);
                 }
-            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.z=-60,this.mesh.visible=!1,e.add(this.mesh)}toggle(){!this.isActive&&!this.isClosing?(this.isActive=!0,this.mesh.visible=!0,this.startupTimer=0):this.isActive&&(this.isActive=!1,this.isClosing=!0),console.log(`GRID STATE:`,this.isActive?`OPENING`:`CLOSING`)}update(e,t){if(!this.isActive&&!this.isClosing&&this.mesh.visible){this.mesh.visible=!1;return}if(!this.mesh.visible&&!this.isActive)return;let n=.05;this.isActive?this.startupTimer<3&&(this.startupTimer+=n):this.isClosing&&(this.startupTimer>0?this.startupTimer-=n:(this.isClosing=!1,this.mesh.visible=!1,this.startupTimer=0)),this.mesh.material.uniforms.uStartupTime.value=this.startupTimer,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uBass.value=(e.bass||0)*5,this.mesh.material.uniforms.uMid.value=(e.mid||0)*5,this.mesh.material.uniforms.uTreble.value=(e.treble||0)*5}};function Bc(e,t){let n=document.createElement(`div`);document.body.appendChild(n);let r=document.createElement(`button`);r.innerHTML=`IGNITE SYSTEM`,r.style.cssText=`
+            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.z=-60,this.mesh.position.y=8,this.mesh.visible=!1,e.add(this.mesh)}toggle(){!this.isActive&&!this.isClosing?(this.isActive=!0,this.mesh.visible=!0,this.startupTimer=0):this.isActive&&(this.isActive=!1,this.isClosing=!0),console.log(`GRID STATE:`,this.isActive?`OPENING`:`CLOSING`)}update(e,t){if(!this.isActive&&!this.isClosing&&this.mesh.visible){this.mesh.visible=!1;return}if(!this.mesh.visible&&!this.isActive)return;let n=.05;this.isActive?this.startupTimer<3&&(this.startupTimer+=n):this.isClosing&&(this.startupTimer>0?this.startupTimer-=n:(this.isClosing=!1,this.mesh.visible=!1,this.startupTimer=0)),this.mesh.material.uniforms.uStartupTime.value=this.startupTimer,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uBass.value=(e.bass||0)*5,this.mesh.material.uniforms.uMid.value=(e.mid||0)*5,this.mesh.material.uniforms.uTreble.value=(e.treble||0)*5}};function Bc(e,t){let n=document.createElement(`div`);document.body.appendChild(n);let r=document.createElement(`button`);r.innerHTML=`IGNITE SYSTEM`,r.style.cssText=`
         position: fixed; 
         top: 50%; 
         left: 50%; 
@@ -4261,7 +4261,7 @@ void main() {
         font-family: monospace; font-weight: bold; font-size: 12px;
         padding: 8px 16px; cursor: pointer; border-radius: 20px;
         transition: all 0.3s; outline: none;
-    `,i=document.createElement(`button`);i.innerHTML=`MIC`,i.style.cssText=r;let a=document.createElement(`button`);a.innerHTML=`SYS`,a.style.cssText=r;let o=document.createElement(`div`);o.style.cssText=`width: 1px; height: 15px; background: rgba(255,255,255,0.3); margin: 0 2px;`;let s=(e,t)=>{e.style.background=`white`,e.style.color=`black`,e.style.boxShadow=`0 0 10px rgba(255,255,255,0.5)`,t.style.background=`transparent`,t.style.color=`rgba(255,255,255,0.5)`,t.style.boxShadow=`none`};s(i,a),i.onclick=async()=>{s(i,a),await e.initMic()},a.onclick=async()=>{s(a,i),await e.initSystem()},t.appendChild(i),t.appendChild(o),t.appendChild(a),document.body.appendChild(t)}var Hc=class{constructor(e){let t=16e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,-5,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*4,r[e]=(Math.random()-.5)*.2,i[e]=Math.random();let t=(Math.random()-.5)*400,o=(Math.random()-.5)*250;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aProgress`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(.3,.9,2.5)},uFormation:{value:0}},vertexShader:`
+    `,i=document.createElement(`button`);i.innerHTML=`MIC`,i.style.cssText=r;let a=document.createElement(`button`);a.innerHTML=`SYS`,a.style.cssText=r;let o=document.createElement(`div`);o.style.cssText=`width: 1px; height: 15px; background: rgba(255,255,255,0.3); margin: 0 2px;`;let s=(e,t)=>{e.style.background=`white`,e.style.color=`black`,e.style.boxShadow=`0 0 10px rgba(255,255,255,0.5)`,t.style.background=`transparent`,t.style.color=`rgba(255,255,255,0.5)`,t.style.boxShadow=`none`};s(i,a),i.onclick=async()=>{s(i,a),await e.initMic()},a.onclick=async()=>{s(a,i),await e.initSystem()},t.appendChild(i),t.appendChild(o),t.appendChild(a),document.body.appendChild(t)}var Hc=class{constructor(e){let t=16e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,20,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*4,r[e]=(Math.random()-.5)*.2,i[e]=Math.random();let t=(Math.random()-.5)*400,o=(Math.random()-.5)*250;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aProgress`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(.4,.9,2.5)},uFormation:{value:0}},vertexShader:`
                 uniform float uTime;
                 uniform float uAudio;
                 uniform float uFormation;
@@ -4342,9 +4342,9 @@ void main() {
                     strength = pow(strength, 3.0);
                     gl_FragColor = vec4(uColor, strength * vAlpha);
                 }
-            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,-5,-90),e.add(this.mesh),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.01,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.highMid*.6+e.treble*.4;n>this.smoothValue?this.smoothValue+=(n-this.smoothValue)*.1:this.smoothValue+=(n-this.smoothValue)*.03,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Uc=class{constructor(e){let t=12e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,0,-50),o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*4,r[e]=(Math.random()-.5)*.1,i[e]=Math.random();let t=(Math.random()-.5)*300,o=(Math.random()-.5)*180;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aProgress`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(.3,.05,.05)},uFormation:{value:0}},vertexShader:`
+            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,5,-90),e.add(this.mesh),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.01,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.highMid*.6+e.treble*.4;n>this.smoothValue?this.smoothValue+=(n-this.smoothValue)*.1:this.smoothValue+=(n-this.smoothValue)*.03,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Uc=class{constructor(e){let t=16e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,-10,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*4,r[e]=(Math.random()-.5)*.2,i[e]=Math.random();let t=(Math.random()-.5)*450,o=(Math.random()-.5)*300;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aProgress`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(1.1,1.4,.9)},uFormation:{value:0}},vertexShader:`
                 uniform float uTime;
-                uniform float uAudio; 
+                uniform float uAudio;
                 uniform float uFormation;
                 
                 attribute float aProgress;
@@ -4355,79 +4355,61 @@ void main() {
                 varying float vAlpha;
 
                 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+                float noise(vec2 p) {
+                    vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), f.x),
+                               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+                }
 
                 void main() {
-                    float width = 150.0;
-                    float height = 90.0;
-                    float halfW = width / 2.0;
-                    float halfH = height / 2.0;
-                    
-                    float speed = 0.8; 
+                    // --- TARGET: TWIN CONFIGURATION ---
+                    float size = 80.0;
+                    float halfSize = size / 2.0;
+                    float speed = 0.2; 
                     float currentT = mod(aProgress + (uTime * speed), 4.0);
                     float side = floor(currentT);
                     float t = fract(currentT);
 
                     vec3 borderPos = vec3(0.0);
-                    
-                    if (side == 0.0) { borderPos.x = halfW + aOffset; borderPos.y = mix(-halfH, halfH, t); } 
-                    else if (side == 1.0) { borderPos.x = mix(halfW, -halfW, t); borderPos.y = halfH + aOffset; } 
-                    else if (side == 2.0) { borderPos.x = -halfW + aOffset; borderPos.y = mix(halfH, -halfH, t); } 
-                    else { borderPos.x = mix(-halfW, halfW, t); borderPos.y = -halfH + aOffset; }
-                    borderPos.z = 0.0; 
+                    if (side == 0.0) { borderPos.x = halfSize + aOffset; borderPos.y = mix(-halfSize, halfSize, t); } 
+                    else if (side == 1.0) { borderPos.x = mix(halfSize, -halfSize, t); borderPos.y = halfSize + aOffset; } 
+                    else if (side == 2.0) { borderPos.x = -halfSize + aOffset; borderPos.y = mix(halfSize, -halfSize, t); } 
+                    else { borderPos.x = mix(-halfSize, halfSize, t); borderPos.y = -halfSize + aOffset; }
+                    borderPos.z = (aRandom - 0.5) * 0.5;
 
-                    // --- SQUARE WAVE (PWM) LOGIC ---
+                    // --- VORTEX DISPLACEMENT (Twin Logic) ---
+                    float noiseScale = 0.1; 
+                    // Offset time slightly so it ripples differently than Blue
+                    float noiseVal = noise(vec2(borderPos.x * noiseScale + uTime + 10.0, borderPos.y * noiseScale));
+                    float eruptionMask = smoothstep(0.3, 0.8, noiseVal);
                     
-                    // 1. PHASE (Beat Sync)
-                    float phase = -(uTime * 5.0 + (uAudio * 10.0));
+                    float expansionStrength = uAudio * 0.8 * eruptionMask; 
+                    vec3 radialMove = vec3(borderPos.x, borderPos.y, 0.0) * expansionStrength;
                     
-                    // 2. CARRIER
-                    float freq = 6.0;
-                    float sineInput = sin(t * freq * 3.14159 + phase);
-                    
-                    // 3. SQUARE CONVERSION (Hard Digital Edges)
-                    float squareWave = sign(sineInput);
-                    
-                    // 4. PULSE GATE
-                    float gateRhythm = sin(t * 8.0 + uTime * 4.0);
-                    float pulseGate = step(0.3, gateRhythm); 
-                    float finalWave = squareWave * pulseGate;
+                    vec3 dir = normalize(vec3(borderPos.x, borderPos.y, 0.0));
+                    vec3 perp = vec3(-dir.y, dir.x, 0.0);
+                    float curlStrength = sin((uTime * 3.0) + (aRandom * 10.0)); 
+                    vec3 swirlMove = perp * curlStrength * (length(radialMove) * 0.5);
 
-                    // 5. RANDOM AMPLITUDE
-                    // Variation logic
-                    float rndAmp = hash(vec2(side, floor(uTime * 10.0))); 
-                    float randomFactor = 0.8 + (rndAmp * 2.0); // Range 0.8 to 2.8
+                    borderPos += radialMove + swirlMove;
+                    borderPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
 
-                    // Audio Amplitude (INCREASED)
-                    // Was 4.0, now 6.0 for bigger jumps
-                    float amp = (0.2 + uAudio * 6.0) * randomFactor;
-                    
-                    vec3 waveOffset = vec3(0.0);
-                    if (side == 0.0) { waveOffset.x = finalWave * amp; }       
-                    else if (side == 1.0) { waveOffset.y = finalWave * amp; }  
-                    else if (side == 2.0) { waveOffset.x = -finalWave * amp; } 
-                    else { waveOffset.y = -finalWave * amp; }                  
-
-                    borderPos += waveOffset;
-                    
-                    if (side == 0.0 || side == 2.0) borderPos.x += aOffset;
-                    else borderPos.y += aOffset;
-
-                    // --- START STATE ---
+                    // --- START STATE: RED WALL WAVINESS ---
                     vec3 startPos = aStartPos;
-                    startPos.z += sin(aStartPos.x * 0.05 + uTime * 1.5) * 5.0;
-                    startPos.y += cos(aStartPos.y * 0.05 + uTime * 1.0) * 3.0;
+                    startPos.z += sin(aStartPos.x * 0.05 + uTime * 2.0) * 4.0;
+                    startPos.y += cos(aStartPos.y * 0.05 + uTime * 1.5) * 2.0;
 
                     // --- MIX ---
                     float ease = uFormation * uFormation * (3.0 - 2.0 * uFormation);
                     vec3 finalPos = mix(startPos, borderPos, ease);
 
                     vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
-                    gl_PointSize = 2.5 * (40.0 / -mvPosition.z);
+                    
+                    gl_PointSize = (2.0 + (aRandom * 0.5)) * (40.0 / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
 
-                    // --- ALPHA ---
-                    float activeAlpha = 0.1 + (uAudio * 0.4) + (pulseGate * uAudio * 0.1);
-                    vAlpha = mix(0.08, activeAlpha, ease);
+                    float activeAlpha = 0.1 + (uAudio * 0.5) + (eruptionMask * uAudio * 0.5);
+                    vAlpha = mix(0.15, activeAlpha, ease);
                 }
             `,fragmentShader:`
                 uniform vec3 uColor;
@@ -4435,10 +4417,111 @@ void main() {
 
                 void main() {
                     float dist = distance(gl_PointCoord, vec2(0.5));
-                    float strength = 1.0 - step(0.5, dist);
+                    float strength = 1.0 - smoothstep(0.0, 0.5, dist);
+                    strength = pow(strength, 3.0);
                     gl_FragColor = vec4(uColor, strength * vAlpha);
                 }
-            `})),this.mesh.rotation.set(0,0,0),this.mesh.position.set(0,0,-50),e.add(this.mesh),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.015,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.bass*.6+e.lowMid*.4;n=n<.3?0:(n-.3)/.7;let r=n**2.5;r>this.smoothValue?this.smoothValue+=(r-this.smoothValue)*.8:this.smoothValue+=(r-this.smoothValue)*.4,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Wc={name:`CopyShader`,uniforms:{tDiffuse:{value:null},opacity:{value:1}},vertexShader:`
+            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,0,-90),e.add(this.mesh),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.015,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.lowMid*.5+e.highMid*.5;n>this.smoothValue?this.smoothValue+=(n-this.smoothValue)*.1:this.smoothValue+=(n-this.smoothValue)*.03,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Wc=class{constructor(e){let t=12e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,-25,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*Math.PI*2,r[e]=(Math.random()-.5)*2,i[e]=Math.random();let t=(Math.random()-.5)*350,o=(Math.random()-.5)*200;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aAngle`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudioHigh:{value:0},uAudioLow:{value:0},uColor:{value:new X(.2,.3,.36)},uFormation:{value:0}},vertexShader:`
+                uniform float uTime;
+                uniform float uAudioHigh; 
+                uniform float uAudioLow; 
+                uniform float uFormation;
+                
+                attribute float aAngle;
+                attribute float aOffset;
+                attribute float aRandom;
+                attribute vec3 aStartPos;
+                
+                varying float vAlpha;
+
+                float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+                float noise(vec2 p) {
+                    vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), f.x),
+                               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+                }
+
+                void main() {
+                    // --- TARGET: CIRCLE ---
+                    float radius = 80.0 + aOffset; // Base Radius
+                    float speed = 0.3; 
+                    
+                    // Continuous flow around circle
+                    float currentAngle = mod(aAngle + (uTime * speed), 6.28318);
+
+                    // Calculate X/Y on circle
+                    vec3 circlePos = vec3(0.0);
+                    circlePos.x = cos(currentAngle) * radius;
+                    circlePos.y = sin(currentAngle) * radius;
+                    circlePos.z = 0.0;
+
+                    // --- SPLIT AUDIO LOGIC ---
+                    // We use sin(angle) to determine top vs bottom.
+                    // sin is + (0 to 1) in Top Half (0 to PI)
+                    // sin is - (-1 to 0) in Bottom Half (PI to 2PI)
+                    
+                    float splitMix = smoothstep(-0.2, 0.2, sin(currentAngle));
+                    // If splitMix is 1.0 -> High Audio. If 0.0 -> Low Audio.
+                    float activeAudio = mix(uAudioLow, uAudioHigh, splitMix);
+
+
+                    // --- VORTAL DISPLACEMENT (+Z Only) ---
+                    float noiseScale = -0.1;
+                    // Scroll noise upwards
+                    float nVal = noise(vec2(circlePos.x * noiseScale, circlePos.y * noiseScale + uTime));
+                    
+                    // Create Eruption Zones
+                    float eruptionMask = smoothstep(0.66, 0.8, nVal);
+                    
+                    // Spiral twist math to make the Z-rise look like a vortex
+                    float twist = sin(uTime * 5.0 + aRandom * 10.0 + currentAngle * 4.0);
+                    
+                    // FORCE: Shoot UP in Z
+                    // Base drift + Audio Explosion
+                    float zForce = (activeAudio * 15.0 * eruptionMask) + (twist * activeAudio * 2.0);
+                    
+                    // Apply strictly to Z (plus a tiny bit of xy wobble for realism)
+                    // abs() ensures it stays positive Z (Upwards) if twist goes negative
+                    circlePos.z += abs(zForce); 
+                    
+                    circlePos.x += twist * activeAudio * 0.5;
+                    circlePos.y += twist * activeAudio * 0.5;
+
+
+                    //  STATE WALL ---
+                    vec3 startPos = aStartPos;
+                    // Gentle, mysterious undulation
+                    startPos.z += sin(aStartPos.y * 0.05 + uTime) * 3.0;
+                    startPos.x += cos(aStartPos.x * 0.05 + uTime * 0.5) * 2.0;
+
+                    // --- MIX ---
+                    float ease = uFormation * uFormation * (3.0 - 2.0 * uFormation);
+                    vec3 finalPos = mix(startPos, circlePos, ease);
+
+                    vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
+                    
+                    // Slightly larger/softer particles for "Hum" feel
+                    gl_PointSize = (3.0 + (aRandom * 2.0)) * (40.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+
+                    // --- ALPHA ---
+                    // State 1: 0.15
+                    // State 2: 0.1 + Audio
+                    float activeAlpha = 0.1 + (activeAudio * 0.6) + (eruptionMask * activeAudio * 0.4);
+                    vAlpha = mix(0.15, activeAlpha, ease);
+                }
+            `,fragmentShader:`
+                uniform vec3 uColor;
+                varying float vAlpha;
+
+                void main() {
+                    float dist = distance(gl_PointCoord, vec2(0.5));
+                    // Soft glowy particle
+                    float strength = 1.0 - smoothstep(0.0, 0.5, dist);
+                    strength = pow(strength, 2.0); // Soft falloff
+                    gl_FragColor = vec4(uColor, strength * vAlpha);
+                }
+            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,-5,-90),e.add(this.mesh),this.smoothHigh=0,this.smoothLow=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.01,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.highMid*.4+e.treble*.6,r=e.bass*.4+e.lowMid*.6,i=.05,a=.02;n>this.smoothHigh?this.smoothHigh+=(n-this.smoothHigh)*i:this.smoothHigh+=(n-this.smoothHigh)*a,r>this.smoothLow?this.smoothLow+=(r-this.smoothLow)*i:this.smoothLow+=(r-this.smoothLow)*a,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudioHigh.value=this.smoothHigh,this.mesh.material.uniforms.uAudioLow.value=this.smoothLow}},Gc={name:`CopyShader`,uniforms:{tDiffuse:{value:null},opacity:{value:1}},vertexShader:`
 
 		varying vec2 vUv;
 
@@ -4461,7 +4544,7 @@ void main() {
 			gl_FragColor = opacity * texel;
 
 
-		}`},Gc=class{constructor(){this.isPass=!0,this.enabled=!0,this.needsSwap=!0,this.clear=!1,this.renderToScreen=!1}setSize(){}render(){console.error(`THREE.Pass: .render() must be implemented in derived pass.`)}dispose(){}},Kc=new Ui(-1,1,1,-1,0,1),qc=new class extends cr{constructor(){super(),this.setAttribute(`position`,new er([-1,3,0,-1,-1,0,3,-1,0],3)),this.setAttribute(`uv`,new er([0,2,0,0,2,0],2))}},Jc=class{constructor(e){this._mesh=new br(qc,e)}dispose(){this._mesh.geometry.dispose()}render(e){e.render(this._mesh,Kc)}get material(){return this._mesh.material}set material(e){this._mesh.material=e}},Yc=class extends Gc{constructor(e,t=`tDiffuse`){super(),this.textureID=t,this.uniforms=null,this.material=null,e instanceof jr?(this.uniforms=e.uniforms,this.material=e):e&&(this.uniforms=Or.clone(e.uniforms),this.material=new jr({name:e.name===void 0?`unspecified`:e.name,defines:Object.assign({},e.defines),uniforms:this.uniforms,vertexShader:e.vertexShader,fragmentShader:e.fragmentShader})),this._fsQuad=new Jc(this.material)}render(e,t,n){this.uniforms[this.textureID]&&(this.uniforms[this.textureID].value=n.texture),this._fsQuad.material=this.material,this.renderToScreen?(e.setRenderTarget(null),this._fsQuad.render(e)):(e.setRenderTarget(t),this.clear&&e.clear(e.autoClearColor,e.autoClearDepth,e.autoClearStencil),this._fsQuad.render(e))}dispose(){this.material.dispose(),this._fsQuad.dispose()}},Xc=class extends Gc{constructor(e,t){super(),this.scene=e,this.camera=t,this.clear=!0,this.needsSwap=!1,this.inverse=!1}render(e,t,n){let r=e.getContext(),i=e.state;i.buffers.color.setMask(!1),i.buffers.depth.setMask(!1),i.buffers.color.setLocked(!0),i.buffers.depth.setLocked(!0);let a,o;this.inverse?(a=0,o=1):(a=1,o=0),i.buffers.stencil.setTest(!0),i.buffers.stencil.setOp(r.REPLACE,r.REPLACE,r.REPLACE),i.buffers.stencil.setFunc(r.ALWAYS,a,4294967295),i.buffers.stencil.setClear(o),i.buffers.stencil.setLocked(!0),e.setRenderTarget(n),this.clear&&e.clear(),e.render(this.scene,this.camera),e.setRenderTarget(t),this.clear&&e.clear(),e.render(this.scene,this.camera),i.buffers.color.setLocked(!1),i.buffers.depth.setLocked(!1),i.buffers.color.setMask(!0),i.buffers.depth.setMask(!0),i.buffers.stencil.setLocked(!1),i.buffers.stencil.setFunc(r.EQUAL,1,4294967295),i.buffers.stencil.setOp(r.KEEP,r.KEEP,r.KEEP),i.buffers.stencil.setLocked(!0)}},Zc=class extends Gc{constructor(){super(),this.needsSwap=!1}render(e){e.state.buffers.stencil.setLocked(!1),e.state.buffers.stencil.setTest(!1)}},Qc=class{constructor(e,t){if(this.renderer=e,this._pixelRatio=e.getPixelRatio(),t===void 0){let n=e.getSize(new K);this._width=n.width,this._height=n.height,t=new St(this._width*this._pixelRatio,this._height*this._pixelRatio,{type:g}),t.texture.name=`EffectComposer.rt1`}else this._width=t.width,this._height=t.height;this.renderTarget1=t,this.renderTarget2=t.clone(),this.renderTarget2.texture.name=`EffectComposer.rt2`,this.writeBuffer=this.renderTarget1,this.readBuffer=this.renderTarget2,this.renderToScreen=!0,this.passes=[],this.copyPass=new Yc(Wc),this.copyPass.material.blending=0,this.clock=new Gi}swapBuffers(){let e=this.readBuffer;this.readBuffer=this.writeBuffer,this.writeBuffer=e}addPass(e){this.passes.push(e),e.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}insertPass(e,t){this.passes.splice(t,0,e),e.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}removePass(e){let t=this.passes.indexOf(e);t!==-1&&this.passes.splice(t,1)}isLastEnabledPass(e){for(let t=e+1;t<this.passes.length;t++)if(this.passes[t].enabled)return!1;return!0}render(e){e===void 0&&(e=this.clock.getDelta());let t=this.renderer.getRenderTarget(),n=!1;for(let t=0,r=this.passes.length;t<r;t++){let r=this.passes[t];if(r.enabled!==!1){if(r.renderToScreen=this.renderToScreen&&this.isLastEnabledPass(t),r.render(this.renderer,this.writeBuffer,this.readBuffer,e,n),r.needsSwap){if(n){let t=this.renderer.getContext(),n=this.renderer.state.buffers.stencil;n.setFunc(t.NOTEQUAL,1,4294967295),this.copyPass.render(this.renderer,this.writeBuffer,this.readBuffer,e),n.setFunc(t.EQUAL,1,4294967295)}this.swapBuffers()}Xc!==void 0&&(r instanceof Xc?n=!0:r instanceof Zc&&(n=!1))}}this.renderer.setRenderTarget(t)}reset(e){if(e===void 0){let t=this.renderer.getSize(new K);this._pixelRatio=this.renderer.getPixelRatio(),this._width=t.width,this._height=t.height,e=this.renderTarget1.clone(),e.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}this.renderTarget1.dispose(),this.renderTarget2.dispose(),this.renderTarget1=e,this.renderTarget2=e.clone(),this.writeBuffer=this.renderTarget1,this.readBuffer=this.renderTarget2}setSize(e,t){this._width=e,this._height=t;let n=this._width*this._pixelRatio,r=this._height*this._pixelRatio;this.renderTarget1.setSize(n,r),this.renderTarget2.setSize(n,r);for(let e=0;e<this.passes.length;e++)this.passes[e].setSize(n,r)}setPixelRatio(e){this._pixelRatio=e,this.setSize(this._width,this._height)}dispose(){this.renderTarget1.dispose(),this.renderTarget2.dispose(),this.copyPass.dispose()}},$c=class extends Gc{constructor(e,t,n=null,r=null,i=null){super(),this.scene=e,this.camera=t,this.overrideMaterial=n,this.clearColor=r,this.clearAlpha=i,this.clear=!0,this.clearDepth=!1,this.needsSwap=!1,this.isRenderPass=!0,this._oldClearColor=new X}render(e,t,n){let r=e.autoClear;e.autoClear=!1;let i,a;this.overrideMaterial!==null&&(a=this.scene.overrideMaterial,this.scene.overrideMaterial=this.overrideMaterial),this.clearColor!==null&&(e.getClearColor(this._oldClearColor),e.setClearColor(this.clearColor,e.getClearAlpha())),this.clearAlpha!==null&&(i=e.getClearAlpha(),e.setClearAlpha(this.clearAlpha)),this.clearDepth==1&&e.clearDepth(),e.setRenderTarget(this.renderToScreen?null:n),this.clear===!0&&e.clear(e.autoClearColor,e.autoClearDepth,e.autoClearStencil),e.render(this.scene,this.camera),this.clearColor!==null&&e.setClearColor(this._oldClearColor),this.clearAlpha!==null&&e.setClearAlpha(i),this.overrideMaterial!==null&&(this.scene.overrideMaterial=a),e.autoClear=r}},el={name:`LuminosityHighPassShader`,uniforms:{tDiffuse:{value:null},luminosityThreshold:{value:1},smoothWidth:{value:1},defaultColor:{value:new X(0)},defaultOpacity:{value:0}},vertexShader:`
+		}`},Kc=class{constructor(){this.isPass=!0,this.enabled=!0,this.needsSwap=!0,this.clear=!1,this.renderToScreen=!1}setSize(){}render(){console.error(`THREE.Pass: .render() must be implemented in derived pass.`)}dispose(){}},qc=new Ui(-1,1,1,-1,0,1),Jc=new class extends cr{constructor(){super(),this.setAttribute(`position`,new er([-1,3,0,-1,-1,0,3,-1,0],3)),this.setAttribute(`uv`,new er([0,2,0,0,2,0],2))}},Yc=class{constructor(e){this._mesh=new br(Jc,e)}dispose(){this._mesh.geometry.dispose()}render(e){e.render(this._mesh,qc)}get material(){return this._mesh.material}set material(e){this._mesh.material=e}},Xc=class extends Kc{constructor(e,t=`tDiffuse`){super(),this.textureID=t,this.uniforms=null,this.material=null,e instanceof jr?(this.uniforms=e.uniforms,this.material=e):e&&(this.uniforms=Or.clone(e.uniforms),this.material=new jr({name:e.name===void 0?`unspecified`:e.name,defines:Object.assign({},e.defines),uniforms:this.uniforms,vertexShader:e.vertexShader,fragmentShader:e.fragmentShader})),this._fsQuad=new Yc(this.material)}render(e,t,n){this.uniforms[this.textureID]&&(this.uniforms[this.textureID].value=n.texture),this._fsQuad.material=this.material,this.renderToScreen?(e.setRenderTarget(null),this._fsQuad.render(e)):(e.setRenderTarget(t),this.clear&&e.clear(e.autoClearColor,e.autoClearDepth,e.autoClearStencil),this._fsQuad.render(e))}dispose(){this.material.dispose(),this._fsQuad.dispose()}},Zc=class extends Kc{constructor(e,t){super(),this.scene=e,this.camera=t,this.clear=!0,this.needsSwap=!1,this.inverse=!1}render(e,t,n){let r=e.getContext(),i=e.state;i.buffers.color.setMask(!1),i.buffers.depth.setMask(!1),i.buffers.color.setLocked(!0),i.buffers.depth.setLocked(!0);let a,o;this.inverse?(a=0,o=1):(a=1,o=0),i.buffers.stencil.setTest(!0),i.buffers.stencil.setOp(r.REPLACE,r.REPLACE,r.REPLACE),i.buffers.stencil.setFunc(r.ALWAYS,a,4294967295),i.buffers.stencil.setClear(o),i.buffers.stencil.setLocked(!0),e.setRenderTarget(n),this.clear&&e.clear(),e.render(this.scene,this.camera),e.setRenderTarget(t),this.clear&&e.clear(),e.render(this.scene,this.camera),i.buffers.color.setLocked(!1),i.buffers.depth.setLocked(!1),i.buffers.color.setMask(!0),i.buffers.depth.setMask(!0),i.buffers.stencil.setLocked(!1),i.buffers.stencil.setFunc(r.EQUAL,1,4294967295),i.buffers.stencil.setOp(r.KEEP,r.KEEP,r.KEEP),i.buffers.stencil.setLocked(!0)}},Qc=class extends Kc{constructor(){super(),this.needsSwap=!1}render(e){e.state.buffers.stencil.setLocked(!1),e.state.buffers.stencil.setTest(!1)}},$c=class{constructor(e,t){if(this.renderer=e,this._pixelRatio=e.getPixelRatio(),t===void 0){let n=e.getSize(new K);this._width=n.width,this._height=n.height,t=new St(this._width*this._pixelRatio,this._height*this._pixelRatio,{type:g}),t.texture.name=`EffectComposer.rt1`}else this._width=t.width,this._height=t.height;this.renderTarget1=t,this.renderTarget2=t.clone(),this.renderTarget2.texture.name=`EffectComposer.rt2`,this.writeBuffer=this.renderTarget1,this.readBuffer=this.renderTarget2,this.renderToScreen=!0,this.passes=[],this.copyPass=new Xc(Gc),this.copyPass.material.blending=0,this.clock=new Gi}swapBuffers(){let e=this.readBuffer;this.readBuffer=this.writeBuffer,this.writeBuffer=e}addPass(e){this.passes.push(e),e.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}insertPass(e,t){this.passes.splice(t,0,e),e.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}removePass(e){let t=this.passes.indexOf(e);t!==-1&&this.passes.splice(t,1)}isLastEnabledPass(e){for(let t=e+1;t<this.passes.length;t++)if(this.passes[t].enabled)return!1;return!0}render(e){e===void 0&&(e=this.clock.getDelta());let t=this.renderer.getRenderTarget(),n=!1;for(let t=0,r=this.passes.length;t<r;t++){let r=this.passes[t];if(r.enabled!==!1){if(r.renderToScreen=this.renderToScreen&&this.isLastEnabledPass(t),r.render(this.renderer,this.writeBuffer,this.readBuffer,e,n),r.needsSwap){if(n){let t=this.renderer.getContext(),n=this.renderer.state.buffers.stencil;n.setFunc(t.NOTEQUAL,1,4294967295),this.copyPass.render(this.renderer,this.writeBuffer,this.readBuffer,e),n.setFunc(t.EQUAL,1,4294967295)}this.swapBuffers()}Zc!==void 0&&(r instanceof Zc?n=!0:r instanceof Qc&&(n=!1))}}this.renderer.setRenderTarget(t)}reset(e){if(e===void 0){let t=this.renderer.getSize(new K);this._pixelRatio=this.renderer.getPixelRatio(),this._width=t.width,this._height=t.height,e=this.renderTarget1.clone(),e.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}this.renderTarget1.dispose(),this.renderTarget2.dispose(),this.renderTarget1=e,this.renderTarget2=e.clone(),this.writeBuffer=this.renderTarget1,this.readBuffer=this.renderTarget2}setSize(e,t){this._width=e,this._height=t;let n=this._width*this._pixelRatio,r=this._height*this._pixelRatio;this.renderTarget1.setSize(n,r),this.renderTarget2.setSize(n,r);for(let e=0;e<this.passes.length;e++)this.passes[e].setSize(n,r)}setPixelRatio(e){this._pixelRatio=e,this.setSize(this._width,this._height)}dispose(){this.renderTarget1.dispose(),this.renderTarget2.dispose(),this.copyPass.dispose()}},el=class extends Kc{constructor(e,t,n=null,r=null,i=null){super(),this.scene=e,this.camera=t,this.overrideMaterial=n,this.clearColor=r,this.clearAlpha=i,this.clear=!0,this.clearDepth=!1,this.needsSwap=!1,this.isRenderPass=!0,this._oldClearColor=new X}render(e,t,n){let r=e.autoClear;e.autoClear=!1;let i,a;this.overrideMaterial!==null&&(a=this.scene.overrideMaterial,this.scene.overrideMaterial=this.overrideMaterial),this.clearColor!==null&&(e.getClearColor(this._oldClearColor),e.setClearColor(this.clearColor,e.getClearAlpha())),this.clearAlpha!==null&&(i=e.getClearAlpha(),e.setClearAlpha(this.clearAlpha)),this.clearDepth==1&&e.clearDepth(),e.setRenderTarget(this.renderToScreen?null:n),this.clear===!0&&e.clear(e.autoClearColor,e.autoClearDepth,e.autoClearStencil),e.render(this.scene,this.camera),this.clearColor!==null&&e.setClearColor(this._oldClearColor),this.clearAlpha!==null&&e.setClearAlpha(i),this.overrideMaterial!==null&&(this.scene.overrideMaterial=a),e.autoClear=r}},tl={name:`LuminosityHighPassShader`,uniforms:{tDiffuse:{value:null},luminosityThreshold:{value:1},smoothWidth:{value:1},defaultColor:{value:new X(0)},defaultOpacity:{value:0}},vertexShader:`
 
 		varying vec2 vUv;
 
@@ -4493,7 +4576,7 @@ void main() {
 
 			gl_FragColor = mix( outputColor, texel, alpha );
 
-		}`},tl=class e extends Gc{constructor(e,t=1,n,r){super(),this.strength=t,this.radius=n,this.threshold=r,this.resolution=e===void 0?new K(256,256):new K(e.x,e.y),this.clearColor=new X(0,0,0),this.needsSwap=!1,this.renderTargetsHorizontal=[],this.renderTargetsVertical=[],this.nMips=5;let i=Math.round(this.resolution.x/2),a=Math.round(this.resolution.y/2);this.renderTargetBright=new St(i,a,{type:g}),this.renderTargetBright.texture.name=`UnrealBloomPass.bright`,this.renderTargetBright.texture.generateMipmaps=!1;for(let e=0;e<this.nMips;e++){let t=new St(i,a,{type:g});t.texture.name=`UnrealBloomPass.h`+e,t.texture.generateMipmaps=!1,this.renderTargetsHorizontal.push(t);let n=new St(i,a,{type:g});n.texture.name=`UnrealBloomPass.v`+e,n.texture.generateMipmaps=!1,this.renderTargetsVertical.push(n),i=Math.round(i/2),a=Math.round(a/2)}let o=el;this.highPassUniforms=Or.clone(o.uniforms),this.highPassUniforms.luminosityThreshold.value=r,this.highPassUniforms.smoothWidth.value=.01,this.materialHighPassFilter=new jr({uniforms:this.highPassUniforms,vertexShader:o.vertexShader,fragmentShader:o.fragmentShader}),this.separableBlurMaterials=[];let s=[6,10,14,18,22];i=Math.round(this.resolution.x/2),a=Math.round(this.resolution.y/2);for(let e=0;e<this.nMips;e++)this.separableBlurMaterials.push(this._getSeparableBlurMaterial(s[e])),this.separableBlurMaterials[e].uniforms.invSize.value=new K(1/i,1/a),i=Math.round(i/2),a=Math.round(a/2);this.compositeMaterial=this._getCompositeMaterial(this.nMips),this.compositeMaterial.uniforms.blurTexture1.value=this.renderTargetsVertical[0].texture,this.compositeMaterial.uniforms.blurTexture2.value=this.renderTargetsVertical[1].texture,this.compositeMaterial.uniforms.blurTexture3.value=this.renderTargetsVertical[2].texture,this.compositeMaterial.uniforms.blurTexture4.value=this.renderTargetsVertical[3].texture,this.compositeMaterial.uniforms.blurTexture5.value=this.renderTargetsVertical[4].texture,this.compositeMaterial.uniforms.bloomStrength.value=t,this.compositeMaterial.uniforms.bloomRadius.value=.1;let c=[1,.8,.6,.4,.2];this.compositeMaterial.uniforms.bloomFactors.value=c,this.bloomTintColors=[new q(1,1,1),new q(1,1,1),new q(1,1,1),new q(1,1,1),new q(1,1,1)],this.compositeMaterial.uniforms.bloomTintColors.value=this.bloomTintColors,this.copyUniforms=Or.clone(Wc.uniforms),this.blendMaterial=new jr({uniforms:this.copyUniforms,vertexShader:Wc.vertexShader,fragmentShader:Wc.fragmentShader,premultipliedAlpha:!0,blending:2,depthTest:!1,depthWrite:!1,transparent:!0}),this._oldClearColor=new X,this._oldClearAlpha=1,this._basic=new Jn,this._fsQuad=new Jc(null)}dispose(){for(let e=0;e<this.renderTargetsHorizontal.length;e++)this.renderTargetsHorizontal[e].dispose();for(let e=0;e<this.renderTargetsVertical.length;e++)this.renderTargetsVertical[e].dispose();this.renderTargetBright.dispose();for(let e=0;e<this.separableBlurMaterials.length;e++)this.separableBlurMaterials[e].dispose();this.compositeMaterial.dispose(),this.blendMaterial.dispose(),this._basic.dispose(),this._fsQuad.dispose()}setSize(e,t){let n=Math.round(e/2),r=Math.round(t/2);this.renderTargetBright.setSize(n,r);for(let e=0;e<this.nMips;e++)this.renderTargetsHorizontal[e].setSize(n,r),this.renderTargetsVertical[e].setSize(n,r),this.separableBlurMaterials[e].uniforms.invSize.value=new K(1/n,1/r),n=Math.round(n/2),r=Math.round(r/2)}render(t,n,r,i,a){t.getClearColor(this._oldClearColor),this._oldClearAlpha=t.getClearAlpha();let o=t.autoClear;t.autoClear=!1,t.setClearColor(this.clearColor,0),a&&t.state.buffers.stencil.setTest(!1),this.renderToScreen&&(this._fsQuad.material=this._basic,this._basic.map=r.texture,t.setRenderTarget(null),t.clear(),this._fsQuad.render(t)),this.highPassUniforms.tDiffuse.value=r.texture,this.highPassUniforms.luminosityThreshold.value=this.threshold,this._fsQuad.material=this.materialHighPassFilter,t.setRenderTarget(this.renderTargetBright),t.clear(),this._fsQuad.render(t);let s=this.renderTargetBright;for(let n=0;n<this.nMips;n++)this._fsQuad.material=this.separableBlurMaterials[n],this.separableBlurMaterials[n].uniforms.colorTexture.value=s.texture,this.separableBlurMaterials[n].uniforms.direction.value=e.BlurDirectionX,t.setRenderTarget(this.renderTargetsHorizontal[n]),t.clear(),this._fsQuad.render(t),this.separableBlurMaterials[n].uniforms.colorTexture.value=this.renderTargetsHorizontal[n].texture,this.separableBlurMaterials[n].uniforms.direction.value=e.BlurDirectionY,t.setRenderTarget(this.renderTargetsVertical[n]),t.clear(),this._fsQuad.render(t),s=this.renderTargetsVertical[n];this._fsQuad.material=this.compositeMaterial,this.compositeMaterial.uniforms.bloomStrength.value=this.strength,this.compositeMaterial.uniforms.bloomRadius.value=this.radius,this.compositeMaterial.uniforms.bloomTintColors.value=this.bloomTintColors,t.setRenderTarget(this.renderTargetsHorizontal[0]),t.clear(),this._fsQuad.render(t),this._fsQuad.material=this.blendMaterial,this.copyUniforms.tDiffuse.value=this.renderTargetsHorizontal[0].texture,a&&t.state.buffers.stencil.setTest(!0),this.renderToScreen?(t.setRenderTarget(null),this._fsQuad.render(t)):(t.setRenderTarget(r),this._fsQuad.render(t)),t.setClearColor(this._oldClearColor,this._oldClearAlpha),t.autoClear=o}_getSeparableBlurMaterial(e){let t=[],n=e/3;for(let r=0;r<e;r++)t.push(.39894*Math.exp(-.5*r*r/(n*n))/n);return new jr({defines:{KERNEL_RADIUS:e},uniforms:{colorTexture:{value:null},invSize:{value:new K(.5,.5)},direction:{value:new K(.5,.5)},gaussianCoefficients:{value:t}},vertexShader:`
+		}`},nl=class e extends Kc{constructor(e,t=1,n,r){super(),this.strength=t,this.radius=n,this.threshold=r,this.resolution=e===void 0?new K(256,256):new K(e.x,e.y),this.clearColor=new X(0,0,0),this.needsSwap=!1,this.renderTargetsHorizontal=[],this.renderTargetsVertical=[],this.nMips=5;let i=Math.round(this.resolution.x/2),a=Math.round(this.resolution.y/2);this.renderTargetBright=new St(i,a,{type:g}),this.renderTargetBright.texture.name=`UnrealBloomPass.bright`,this.renderTargetBright.texture.generateMipmaps=!1;for(let e=0;e<this.nMips;e++){let t=new St(i,a,{type:g});t.texture.name=`UnrealBloomPass.h`+e,t.texture.generateMipmaps=!1,this.renderTargetsHorizontal.push(t);let n=new St(i,a,{type:g});n.texture.name=`UnrealBloomPass.v`+e,n.texture.generateMipmaps=!1,this.renderTargetsVertical.push(n),i=Math.round(i/2),a=Math.round(a/2)}let o=tl;this.highPassUniforms=Or.clone(o.uniforms),this.highPassUniforms.luminosityThreshold.value=r,this.highPassUniforms.smoothWidth.value=.01,this.materialHighPassFilter=new jr({uniforms:this.highPassUniforms,vertexShader:o.vertexShader,fragmentShader:o.fragmentShader}),this.separableBlurMaterials=[];let s=[6,10,14,18,22];i=Math.round(this.resolution.x/2),a=Math.round(this.resolution.y/2);for(let e=0;e<this.nMips;e++)this.separableBlurMaterials.push(this._getSeparableBlurMaterial(s[e])),this.separableBlurMaterials[e].uniforms.invSize.value=new K(1/i,1/a),i=Math.round(i/2),a=Math.round(a/2);this.compositeMaterial=this._getCompositeMaterial(this.nMips),this.compositeMaterial.uniforms.blurTexture1.value=this.renderTargetsVertical[0].texture,this.compositeMaterial.uniforms.blurTexture2.value=this.renderTargetsVertical[1].texture,this.compositeMaterial.uniforms.blurTexture3.value=this.renderTargetsVertical[2].texture,this.compositeMaterial.uniforms.blurTexture4.value=this.renderTargetsVertical[3].texture,this.compositeMaterial.uniforms.blurTexture5.value=this.renderTargetsVertical[4].texture,this.compositeMaterial.uniforms.bloomStrength.value=t,this.compositeMaterial.uniforms.bloomRadius.value=.1;let c=[1,.8,.6,.4,.2];this.compositeMaterial.uniforms.bloomFactors.value=c,this.bloomTintColors=[new q(1,1,1),new q(1,1,1),new q(1,1,1),new q(1,1,1),new q(1,1,1)],this.compositeMaterial.uniforms.bloomTintColors.value=this.bloomTintColors,this.copyUniforms=Or.clone(Gc.uniforms),this.blendMaterial=new jr({uniforms:this.copyUniforms,vertexShader:Gc.vertexShader,fragmentShader:Gc.fragmentShader,premultipliedAlpha:!0,blending:2,depthTest:!1,depthWrite:!1,transparent:!0}),this._oldClearColor=new X,this._oldClearAlpha=1,this._basic=new Jn,this._fsQuad=new Yc(null)}dispose(){for(let e=0;e<this.renderTargetsHorizontal.length;e++)this.renderTargetsHorizontal[e].dispose();for(let e=0;e<this.renderTargetsVertical.length;e++)this.renderTargetsVertical[e].dispose();this.renderTargetBright.dispose();for(let e=0;e<this.separableBlurMaterials.length;e++)this.separableBlurMaterials[e].dispose();this.compositeMaterial.dispose(),this.blendMaterial.dispose(),this._basic.dispose(),this._fsQuad.dispose()}setSize(e,t){let n=Math.round(e/2),r=Math.round(t/2);this.renderTargetBright.setSize(n,r);for(let e=0;e<this.nMips;e++)this.renderTargetsHorizontal[e].setSize(n,r),this.renderTargetsVertical[e].setSize(n,r),this.separableBlurMaterials[e].uniforms.invSize.value=new K(1/n,1/r),n=Math.round(n/2),r=Math.round(r/2)}render(t,n,r,i,a){t.getClearColor(this._oldClearColor),this._oldClearAlpha=t.getClearAlpha();let o=t.autoClear;t.autoClear=!1,t.setClearColor(this.clearColor,0),a&&t.state.buffers.stencil.setTest(!1),this.renderToScreen&&(this._fsQuad.material=this._basic,this._basic.map=r.texture,t.setRenderTarget(null),t.clear(),this._fsQuad.render(t)),this.highPassUniforms.tDiffuse.value=r.texture,this.highPassUniforms.luminosityThreshold.value=this.threshold,this._fsQuad.material=this.materialHighPassFilter,t.setRenderTarget(this.renderTargetBright),t.clear(),this._fsQuad.render(t);let s=this.renderTargetBright;for(let n=0;n<this.nMips;n++)this._fsQuad.material=this.separableBlurMaterials[n],this.separableBlurMaterials[n].uniforms.colorTexture.value=s.texture,this.separableBlurMaterials[n].uniforms.direction.value=e.BlurDirectionX,t.setRenderTarget(this.renderTargetsHorizontal[n]),t.clear(),this._fsQuad.render(t),this.separableBlurMaterials[n].uniforms.colorTexture.value=this.renderTargetsHorizontal[n].texture,this.separableBlurMaterials[n].uniforms.direction.value=e.BlurDirectionY,t.setRenderTarget(this.renderTargetsVertical[n]),t.clear(),this._fsQuad.render(t),s=this.renderTargetsVertical[n];this._fsQuad.material=this.compositeMaterial,this.compositeMaterial.uniforms.bloomStrength.value=this.strength,this.compositeMaterial.uniforms.bloomRadius.value=this.radius,this.compositeMaterial.uniforms.bloomTintColors.value=this.bloomTintColors,t.setRenderTarget(this.renderTargetsHorizontal[0]),t.clear(),this._fsQuad.render(t),this._fsQuad.material=this.blendMaterial,this.copyUniforms.tDiffuse.value=this.renderTargetsHorizontal[0].texture,a&&t.state.buffers.stencil.setTest(!0),this.renderToScreen?(t.setRenderTarget(null),this._fsQuad.render(t)):(t.setRenderTarget(r),this._fsQuad.render(t)),t.setClearColor(this._oldClearColor,this._oldClearAlpha),t.autoClear=o}_getSeparableBlurMaterial(e){let t=[],n=e/3;for(let r=0;r<e;r++)t.push(.39894*Math.exp(-.5*r*r/(n*n))/n);return new jr({defines:{KERNEL_RADIUS:e},uniforms:{colorTexture:{value:null},invSize:{value:new K(.5,.5)},direction:{value:new K(.5,.5)},gaussianCoefficients:{value:t}},vertexShader:`
 
 				varying vec2 vUv;
 
@@ -4575,4 +4658,4 @@ void main() {
 					float bloomAlpha = max( bloom.r, max( bloom.g, bloom.b ) );
 					gl_FragColor = vec4( bloom, bloomAlpha );
 
-				}`})}};tl.BlurDirectionX=new K(1,0),tl.BlurDirectionY=new K(0,1);var nl,rl,il,al,ol,sl,cl=[],ll=[],ul,dl,fl,pl,ml,hl,gl,_l=!1,vl=!0,yl=!1,bl=!1,xl=0,Sl=0,Cl=100,wl=new Gi;function Tl(){nl=new Gr,nl.background=new X(0),sl=new Pc;let e=window.innerWidth/window.innerHeight;rl=new Ui(Cl*e/-2,Cl*e/2,Cl/2,Cl/-2,.1,1e3),rl.position.z=10,il=new Sc({antialias:!1}),il.setSize(window.innerWidth,window.innerHeight),il.toneMapping=2,document.body.appendChild(il.domElement),pl=new Lc,ml=new zc(nl),hl=new Hc(nl),gl=new Uc(nl),Bc(sl,()=>{console.log(`Ignition Sequence Started`),hl&&hl.ignite(),gl&&gl.ignite()});let t=new $c(nl,rl),n=new tl(new K(window.innerWidth,window.innerHeight),5.5,.6,0);ul=new Yc(Fc),ul.uniforms.uResolution&&ul.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),dl=new Yc(Ic),fl=new Yc(Rc),fl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),al=new Qc(il),al.addPass(t),al.addPass(ul),al.addPass(n),al.addPass(dl),al.addPass(fl),ol=new jc(25,Cl*e,Cl),ol.seeds.forEach(e=>{let t=new Mc(e,ol,nl);cl.push(t);let n=new Nc(e,ol,nl);ll.push(n)}),window.addEventListener(`keydown`,e=>{let t=e.key.toLowerCase();t===`r`&&(_l=!_l,ll.forEach(e=>e.toggle(_l))),t===`t`&&(vl=!vl,cl.forEach(e=>e.toggle(vl)),console.log(`Trees Toggled:`,vl)),t===`s`&&(yl=!yl),t===`g`&&(bl=!bl),t===`p`&&ml.toggle(),t===`h`&&pl.toggle()}),El()}function El(){requestAnimationFrame(El);let e=sl.getData(),t=wl.getElapsedTime(),n={bass:e.bass,mid:(e.lowMid+e.highMid)/2,treble:e.treble};if(ml&&ml.update(e,t),ol&&ol.update(t,n),cl.forEach(e=>e.update(n,t)),ll.forEach(e=>e.update(n,t)),ml&&ml.update(e,t),fl&&pl&&(fl.uniforms.uActive.value=pl.isActive?1:0,fl.uniforms.uBoxes.value=pl.shaderData),hl&&hl.update(e,t),hl&&hl.update(e,t),gl&&gl.update(e,t),pl){let e=[...cl,...ll];pl.update(e,rl,t)}ul&&(ul.uniforms.uTreble&&(ul.uniforms.uTreble.value=n.treble),xl+=((yl?1:0)-xl)*.05,ul.uniforms.uActive.value=xl),dl&&(dl.uniforms.uTime.value=t,dl.uniforms.uAudio.value=n.bass,Sl+=((bl?1:0)-Sl)*.1,dl.uniforms.uActive.value=Sl),al&&al.render()}window.addEventListener(`resize`,()=>{let e=window.innerWidth/window.innerHeight;rl.left=-Cl*e/2,rl.right=Cl*e/2,rl.top=Cl/2,rl.bottom=-Cl/2,rl.updateProjectionMatrix(),il.setSize(window.innerWidth,window.innerHeight),al&&al.setSize(window.innerWidth,window.innerHeight),ul&&ul.uniforms.uResolution&&ul.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),fl&&fl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),pl&&pl.resize()}),Tl();
+				}`})}};nl.BlurDirectionX=new K(1,0),nl.BlurDirectionY=new K(0,1);var rl,il,al,ol,sl,cl,ll=[],ul=[],dl,fl,pl,ml,hl,gl,_l,vl,yl=!1,bl=!0,xl=!1,Sl=!1,Cl=0,wl=0,Tl=100,El=new Gi;function Dl(){rl=new Gr,rl.background=new X(0),cl=new Pc;let e=window.innerWidth/window.innerHeight;il=new Ui(Tl*e/-2,Tl*e/2,Tl/2,Tl/-2,.1,1e3),il.position.z=10,al=new Sc({antialias:!1}),al.setSize(window.innerWidth,window.innerHeight),al.toneMapping=2,document.body.appendChild(al.domElement),ml=new Lc,hl=new zc(rl),gl=new Hc(rl),_l=new Uc(rl),vl=new Wc(rl),Bc(cl,()=>{console.log(`Ignition Sequence Started`),gl&&gl.ignite(),_l&&_l.ignite(),vl&&vl.ignite()});let t=new el(rl,il),n=new nl(new K(window.innerWidth,window.innerHeight),5.5,.6,0);dl=new Xc(Fc),dl.uniforms.uResolution&&dl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),fl=new Xc(Ic),pl=new Xc(Rc),pl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),ol=new $c(al),ol.addPass(t),ol.addPass(dl),ol.addPass(n),ol.addPass(fl),ol.addPass(pl),sl=new jc(25,Tl*e,Tl),sl.seeds.forEach(e=>{let t=new Mc(e,sl,rl);ll.push(t);let n=new Nc(e,sl,rl);ul.push(n)}),window.addEventListener(`keydown`,e=>{let t=e.key.toLowerCase();t===`r`&&(yl=!yl,ul.forEach(e=>e.toggle(yl))),t===`t`&&(bl=!bl,ll.forEach(e=>e.toggle(bl)),console.log(`Trees Toggled:`,bl)),t===`s`&&(xl=!xl),t===`g`&&(Sl=!Sl),t===`p`&&hl.toggle(),t===`h`&&ml.toggle()}),Ol()}function Ol(){requestAnimationFrame(Ol);let e=cl.getData(),t=El.getElapsedTime(),n={bass:e.bass,mid:(e.lowMid+e.highMid)/2,treble:e.treble};if(hl&&hl.update(e,t),sl&&sl.update(t,n),ll.forEach(e=>e.update(n,t)),ul.forEach(e=>e.update(n,t)),hl&&hl.update(e,t),pl&&ml&&(pl.uniforms.uActive.value=ml.isActive?1:0,pl.uniforms.uBoxes.value=ml.shaderData),gl&&gl.update(e,t),gl&&gl.update(e,t),_l&&_l.update(e,t),vl&&vl.update(e,t),ml){let e=[...ll,...ul];ml.update(e,il,t)}dl&&(dl.uniforms.uTreble&&(dl.uniforms.uTreble.value=n.treble),Cl+=((xl?1:0)-Cl)*.05,dl.uniforms.uActive.value=Cl),fl&&(fl.uniforms.uTime.value=t,fl.uniforms.uAudio.value=n.bass,wl+=((Sl?1:0)-wl)*.1,fl.uniforms.uActive.value=wl),ol&&ol.render()}window.addEventListener(`resize`,()=>{let e=window.innerWidth/window.innerHeight;il.left=-Tl*e/2,il.right=Tl*e/2,il.top=Tl/2,il.bottom=-Tl/2,il.updateProjectionMatrix(),al.setSize(window.innerWidth,window.innerHeight),ol&&ol.setSize(window.innerWidth,window.innerHeight),dl&&dl.uniforms.uResolution&&dl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),pl&&pl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),ml&&ml.resize()}),Dl();
