@@ -11,6 +11,7 @@ import { AudioGrid } from './grid.js';
 import { createStartUI } from './ui1.js';
 //import { FlowField } from './FlowField.js'; 
 import { ChoirBorder } from './ChoirBorder.js';
+import { ChoirBorderRed } from './ChoirBorderRed.js';
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -24,6 +25,7 @@ let streaksPass, glitchPass, invertPass;
 let hud, audioGrid;
 //let flowField;
 let choirBorder;
+let choirRed;
 
 // Toggle Flags
 let isRedActive = false;
@@ -68,17 +70,22 @@ function init() {
     hud = new AnalysisHUD();
     audioGrid = new AudioGrid(scene);
     
-    //flowField = new FlowField(scene);
+    // --- CREATE VISUALS ---
     choirBorder = new ChoirBorder(scene);
-    createStartUI(sound);
+    choirRed = new ChoirBorderRed(scene);
+
+    // --- CREATE UI (ONLY ONCE!) ---
+    createStartUI(sound, () => {
+        console.log("Ignition Sequence Started");
+        // Ignite everything at the same time
+        if (choirBorder) choirBorder.ignite();
+        if (choirRed) choirRed.ignite();
+    });
 
     // 2. Setup Post-Processing
     const renderScene = new RenderPass(scene, camera);
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 5.5, 0.6, 0.0);
     
-    // --- DELETE THE LINE THAT WAS HERE ---
-    // const flowField = new FlowField(scene);  <-- THIS WAS THE PROBLEM
-
     streaksPass = new ShaderPass(StreaksShader);
     if (streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     
@@ -114,19 +121,13 @@ function init() {
         }
         if (key === 't') {
             isTreeActive = !isTreeActive;
-            // Loop through all standard trees and toggle them
             trees.forEach(t => t.toggle(isTreeActive));
             console.log("Trees Toggled:", isTreeActive);
         }
         if (key === 's') isStreakActive = !isStreakActive;
         if (key === 'g') isGlitchActive = !isGlitchActive;
-        
-        // 'P' toggles Grid
         if (key === 'p') audioGrid.toggle();
-        // 'H' toggles HUD
         if (key === 'h') hud.toggle();
-
-
     });
 
     animate();
@@ -162,7 +163,8 @@ function animate() {
      if (choirBorder) {
         choirBorder.update(audioData, time);
     }
-
+    if (choirBorder) choirBorder.update(audioData, time);
+    if (choirRed) choirRed.update(audioData, time);
     /*if(flowField) {
     
     flowField.update(audioData, time);

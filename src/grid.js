@@ -2,7 +2,9 @@ import * as THREE from 'three';
 
 export class AudioGrid {
     constructor(scene) {
-        this.isActive = false;
+        this.isActive = false; // Logic state
+        this.isClosing = false; // Animation state
+        this.startupTimer = 0.0; 
 
         const geometry = new THREE.PlaneGeometry(50, 50, 20, 20);
 
@@ -15,7 +17,8 @@ export class AudioGrid {
                 uMid: { value: 0 },
                 uTreble: { value: 0 },
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color(0.0, 0.1, 0.1) } 
+                uColor: { value: new THREE.Color(0.0, 0.1, 0.1) },
+                uStartupTime: { value: 0.0 } 
             },
             vertexShader: `
                 uniform float uBass;
@@ -23,6 +26,7 @@ export class AudioGrid {
                 uniform float uTreble;
                 uniform float uTime;
                 varying float vElevation;
+                varying vec3 vPos;
 
                 float random(vec2 st) {
                     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
@@ -30,45 +34,28 @@ export class AudioGrid {
 
                 void main() {
                     vec3 pos = position;
-                    
-                    // --- 1. CENTER MASK ---
+                    vPos = pos; 
+
                     float dist = distance(uv, vec2(0.5));
                     float mask = 1.0 - smoothstep(0.0, 0.55, dist);
 
-                    // --- 2. SMOOTH RANDOM TRANSITION ---
-                    // Instead of snapping, we calculate "Now" and "Next" and blend them.
-                    
-                    float speed = 1.2; // How fast spikes change location
+                    float speed = 1.2; 
                     float t = uTime * speed;
-                    
-                    float tick1 = floor(t);       // Current State (e.g., 1.0)
-                    float tick2 = tick1 + 1.0;    // Next State    (e.g., 2.0)
-                    float progress = fract(t);    // 0.0 -> 1.0 transition
-                    
-                    // Use smoothstep to ease the transition (Slow start, slow end)
+                    float tick1 = floor(t);       
+                    float tick2 = tick1 + 1.0;    
+                    float progress = fract(t);    
                     float mixVal = smoothstep(0.0, 1.0, progress);
 
-                    // Calculate Random Noise for BOTH states
                     float rnd1 = random(uv + vec2(tick1));
                     float rnd2 = random(uv + vec2(tick2));
 
-                    // --- 3. SELECTION ---
-                    // Select spikes for state 1 and state 2 independently
-                    // Using smoothstep(0.7, 1.0) creates a tapered spike instead of a block
                     float spike1 = smoothstep(0.1, 1.0, rnd1);
                     float spike2 = smoothstep(0.1, 1.0, rnd2);
 
-                    // BLEND the two spike maps together
                     float currentSpike = mix(spike1, spike2, mixVal);
+                    float energy = (uBass * 2.0) + (uMid * 20.0) + (uTreble * 10.0);
 
-                    // --- 4. AUDIO ENERGY ---
-                    float energy = (uBass * 4.0) + (uMid * 10.0) + (uTreble * 10.0);
-
-                    // --- 5. APPLY ---
-                    // Spikes grow up based on audio energy
                     pos.z += currentSpike * (2.0 + energy) * mask;
-
-                    // Small idle wave
                     pos.z += sin(pos.x * 0.01 + uTime) * 0.1;
 
                     vElevation = pos.z; 
@@ -78,10 +65,29 @@ export class AudioGrid {
             `,
             fragmentShader: `
                 uniform vec3 uColor;
+                uniform float uStartupTime;
+                uniform float uTime;
                 varying float vElevation;
+                varying vec3 vPos;
+
+                float random(vec2 st) {
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
 
                 void main() {
                     float alpha = 0.2 + smoothstep(0.0, 10.0, vElevation) * 0.8;
+
+                    // --- FLICKER LOGIC ---
+                    float flickerSeed = floor(vPos.x * 0.5) + floor(vPos.y * 0.5) + (uTime * 10.0);
+                    float flicker = random(vec2(flickerSeed, uTime)); // Use uTime for constant flicker
+
+                    // Map timer 0->3 to probability 0->1
+                    float probability = smoothstep(0.0, 2.5, uStartupTime);
+
+                    if (flicker > probability) {
+                        discard;
+                    }
+
                     gl_FragColor = vec4(uColor, alpha);
                 }
             `
@@ -91,18 +97,55 @@ export class AudioGrid {
         this.mesh.rotation.x = -Math.PI / 2.5; 
         this.mesh.rotation.z = Math.PI / 4;  
         this.mesh.position.z = -60; 
+        
         this.mesh.visible = false;
         scene.add(this.mesh);
     }
 
     toggle() {
-        this.isActive = !this.isActive;
-        this.mesh.visible = this.isActive;
+        if (!this.isActive && !this.isClosing) {
+            // START UP
+            this.isActive = true;
+            this.mesh.visible = true;
+            this.startupTimer = 0.0;
+        } else if (this.isActive) {
+            // START SHUT DOWN
+            this.isActive = false;
+            this.isClosing = true;
+            // Don't hide mesh yet! Wait for update loop to drain timer.
+        }
+        console.log("GRID STATE:", this.isActive ? "OPENING" : "CLOSING");
     }
 
     update(audio, time) {
-        if (!this.isActive) return;
+        // Only stop updating if fully closed
+        if (!this.isActive && !this.isClosing && this.mesh.visible) {
+            this.mesh.visible = false;
+            return;
+        }
+        if (!this.mesh.visible && !this.isActive) return;
 
+        // --- TIMER LOGIC ---
+        const dt = 0.05; // Speed of transition
+
+        if (this.isActive) {
+            // Opening: Count UP to 3.0
+            if (this.startupTimer < 3.0) {
+                this.startupTimer += dt;
+            }
+        } else if (this.isClosing) {
+            // Closing: Count DOWN to 0.0
+            if (this.startupTimer > 0.0) {
+                this.startupTimer -= dt;
+            } else {
+                // Done closing
+                this.isClosing = false;
+                this.mesh.visible = false;
+                this.startupTimer = 0.0;
+            }
+        }
+
+        this.mesh.material.uniforms.uStartupTime.value = this.startupTimer;
         this.mesh.material.uniforms.uTime.value = time;
         this.mesh.material.uniforms.uBass.value = (audio.bass || 0) * 5.0;
         this.mesh.material.uniforms.uMid.value = (audio.mid || 0) * 5.0;

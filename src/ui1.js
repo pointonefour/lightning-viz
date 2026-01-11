@@ -1,4 +1,8 @@
-export function createStartUI(soundSystem) {
+// src/ui1.js
+
+// 1. ADD "onStartCallback" HERE
+export function createStartUI(soundSystem, onStartCallback) {
+    
     // 1. Main Container
     const wrapper = document.createElement('div');
     document.body.appendChild(wrapper);
@@ -45,12 +49,18 @@ export function createStartUI(soundSystem) {
         // 2. AUTO-START MICROPHONE
         await soundSystem.initMic();
 
-        // 3. Fade out big button
+        // 3. TRIGGER CALLBACK (Ignite the particles)
+        // Now this variable exists because we added it to the function arguments
+        if (onStartCallback) {
+            onStartCallback();
+        }
+        
+        // 4. Fade out big button
         btnInit.style.opacity = '0';
         btnInit.style.transform = 'translate(-50%, -50%) scale(0.8)';
         setTimeout(() => btnInit.remove(), 500);
 
-        // 4. Show Toggle UI (With MIC active state)
+        // 5. Show Toggle UI (With MIC active state)
         createToggleUI(soundSystem);
     };
 }
