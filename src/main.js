@@ -12,6 +12,7 @@ import { createStartUI } from './ui1.js';
 //import { FlowField } from './FlowField.js'; 
 import { ChoirBorder } from './ChoirBorder.js';
 import { ChoirBorderRed } from './ChoirBorderRed.js';
+import { ChoirCircle } from './ChoirCircle.js'
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -26,6 +27,7 @@ let hud, audioGrid;
 //let flowField;
 let choirBorder;
 let choirRed;
+let choirCircle;
 
 // Toggle Flags
 let isRedActive = false;
@@ -73,6 +75,7 @@ function init() {
     // --- CREATE VISUALS ---
     choirBorder = new ChoirBorder(scene);
     choirRed = new ChoirBorderRed(scene);
+    choirCircle = new ChoirCircle(scene);
 
     // --- CREATE UI (ONLY ONCE!) ---
     createStartUI(sound, () => {
@@ -80,6 +83,7 @@ function init() {
         // Ignite everything at the same time
         if (choirBorder) choirBorder.ignite();
         if (choirRed) choirRed.ignite();
+        if (choirCircle) choirCircle.ignite()
     });
 
     // 2. Setup Post-Processing
@@ -165,6 +169,8 @@ function animate() {
     }
     if (choirBorder) choirBorder.update(audioData, time);
     if (choirRed) choirRed.update(audioData, time);
+    //if (choirCircle) choirCircle.ignite();
+    if (choirCircle) choirCircle.update(audioData, time);
     /*if(flowField) {
     
     flowField.update(audioData, time);

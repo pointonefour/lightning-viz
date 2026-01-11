@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export class ChoirBorderRed {
     constructor(scene) {
         // --- CONFIGURATION ---
-        const particleCount = 12000; 
+        const particleCount = 16000; 
         
         const progress = new Float32Array(particleCount); 
         const offsets = new Float32Array(particleCount);  
@@ -11,7 +11,13 @@ export class ChoirBorderRed {
         const startPositions = new Float32Array(particleCount * 3);
 
         const dummyObj = new THREE.Object3D();
-        dummyObj.position.set(0, 0, -50); 
+        
+        // --- POSITION SHIFT ---
+        // Blue is at -5. We put Red at -15 (Lower down).
+        dummyObj.position.set(0, -10, -90); 
+        
+        dummyObj.rotation.x = -Math.PI / 2.5;
+        dummyObj.rotation.z = Math.PI / 4;
         dummyObj.updateMatrixWorld();
         
         const inverseMatrix = dummyObj.matrixWorld.clone().invert();
@@ -19,11 +25,12 @@ export class ChoirBorderRed {
 
         for (let i = 0; i < particleCount; i++) {
             progress[i] = Math.random() * 4.0;
-            offsets[i] = (Math.random() - 0.5) * 0.1; 
+            offsets[i] = (Math.random() - 0.5) * 0.2; 
             randoms[i] = Math.random();
 
-            const screenX = (Math.random() - 0.5) * 300; 
-            const screenY = (Math.random() - 0.5) * 180;
+            // --- STATE 1: RED WALL ---
+            const screenX = (Math.random() - 0.5) * 450; 
+            const screenY = (Math.random() - 0.5) * 300;
             const screenZ = 0; 
 
             tempVec.set(screenX, screenY, screenZ);
@@ -49,13 +56,12 @@ export class ChoirBorderRed {
             uniforms: {
                 uTime: { value: 0 },
                 uAudio: { value: 0 }, 
-                // Color from your snippet
-                uColor: { value: new THREE.Color(0.3, 0.05, 0.05) },
+                uColor: { value: new THREE.Color(1.1, 1.4, 0.9) },
                 uFormation: { value: 0.0 } 
             },
             vertexShader: `
                 uniform float uTime;
-                uniform float uAudio; 
+                uniform float uAudio;
                 uniform float uFormation;
                 
                 attribute float aProgress;
@@ -66,79 +72,61 @@ export class ChoirBorderRed {
                 varying float vAlpha;
 
                 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+                float noise(vec2 p) {
+                    vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), f.x),
+                               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+                }
 
                 void main() {
-                    float width = 150.0;
-                    float height = 90.0;
-                    float halfW = width / 2.0;
-                    float halfH = height / 2.0;
-                    
-                    float speed = 0.8; 
+                    // --- TARGET: TWIN CONFIGURATION ---
+                    float size = 80.0;
+                    float halfSize = size / 2.0;
+                    float speed = 0.2; 
                     float currentT = mod(aProgress + (uTime * speed), 4.0);
                     float side = floor(currentT);
                     float t = fract(currentT);
 
                     vec3 borderPos = vec3(0.0);
-                    
-                    if (side == 0.0) { borderPos.x = halfW + aOffset; borderPos.y = mix(-halfH, halfH, t); } 
-                    else if (side == 1.0) { borderPos.x = mix(halfW, -halfW, t); borderPos.y = halfH + aOffset; } 
-                    else if (side == 2.0) { borderPos.x = -halfW + aOffset; borderPos.y = mix(halfH, -halfH, t); } 
-                    else { borderPos.x = mix(-halfW, halfW, t); borderPos.y = -halfH + aOffset; }
-                    borderPos.z = 0.0; 
+                    if (side == 0.0) { borderPos.x = halfSize + aOffset; borderPos.y = mix(-halfSize, halfSize, t); } 
+                    else if (side == 1.0) { borderPos.x = mix(halfSize, -halfSize, t); borderPos.y = halfSize + aOffset; } 
+                    else if (side == 2.0) { borderPos.x = -halfSize + aOffset; borderPos.y = mix(halfSize, -halfSize, t); } 
+                    else { borderPos.x = mix(-halfSize, halfSize, t); borderPos.y = -halfSize + aOffset; }
+                    borderPos.z = (aRandom - 0.5) * 0.5;
 
-                    // --- SQUARE WAVE (PWM) LOGIC ---
+                    // --- VORTEX DISPLACEMENT (Twin Logic) ---
+                    float noiseScale = 0.1; 
+                    // Offset time slightly so it ripples differently than Blue
+                    float noiseVal = noise(vec2(borderPos.x * noiseScale + uTime + 10.0, borderPos.y * noiseScale));
+                    float eruptionMask = smoothstep(0.3, 0.8, noiseVal);
                     
-                    // 1. PHASE (Beat Sync)
-                    float phase = -(uTime * 5.0 + (uAudio * 10.0));
+                    float expansionStrength = uAudio * 0.8 * eruptionMask; 
+                    vec3 radialMove = vec3(borderPos.x, borderPos.y, 0.0) * expansionStrength;
                     
-                    // 2. CARRIER
-                    float freq = 6.0;
-                    float sineInput = sin(t * freq * 3.14159 + phase);
-                    
-                    // 3. SQUARE CONVERSION (Hard Digital Edges)
-                    float squareWave = sign(sineInput);
-                    
-                    // 4. PULSE GATE
-                    float gateRhythm = sin(t * 8.0 + uTime * 4.0);
-                    float pulseGate = step(0.3, gateRhythm); 
-                    float finalWave = squareWave * pulseGate;
+                    vec3 dir = normalize(vec3(borderPos.x, borderPos.y, 0.0));
+                    vec3 perp = vec3(-dir.y, dir.x, 0.0);
+                    float curlStrength = sin((uTime * 3.0) + (aRandom * 10.0)); 
+                    vec3 swirlMove = perp * curlStrength * (length(radialMove) * 0.5);
 
-                    // 5. RANDOM AMPLITUDE
-                    // Variation logic
-                    float rndAmp = hash(vec2(side, floor(uTime * 10.0))); 
-                    float randomFactor = 0.8 + (rndAmp * 2.0); // Range 0.8 to 2.8
+                    borderPos += radialMove + swirlMove;
+                    borderPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
 
-                    // Audio Amplitude (INCREASED)
-                    // Was 4.0, now 6.0 for bigger jumps
-                    float amp = (0.2 + uAudio * 6.0) * randomFactor;
-                    
-                    vec3 waveOffset = vec3(0.0);
-                    if (side == 0.0) { waveOffset.x = finalWave * amp; }       
-                    else if (side == 1.0) { waveOffset.y = finalWave * amp; }  
-                    else if (side == 2.0) { waveOffset.x = -finalWave * amp; } 
-                    else { waveOffset.y = -finalWave * amp; }                  
-
-                    borderPos += waveOffset;
-                    
-                    if (side == 0.0 || side == 2.0) borderPos.x += aOffset;
-                    else borderPos.y += aOffset;
-
-                    // --- START STATE ---
+                    // --- START STATE: RED WALL WAVINESS ---
                     vec3 startPos = aStartPos;
-                    startPos.z += sin(aStartPos.x * 0.05 + uTime * 1.5) * 5.0;
-                    startPos.y += cos(aStartPos.y * 0.05 + uTime * 1.0) * 3.0;
+                    startPos.z += sin(aStartPos.x * 0.05 + uTime * 2.0) * 4.0;
+                    startPos.y += cos(aStartPos.y * 0.05 + uTime * 1.5) * 2.0;
 
                     // --- MIX ---
                     float ease = uFormation * uFormation * (3.0 - 2.0 * uFormation);
                     vec3 finalPos = mix(startPos, borderPos, ease);
 
                     vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
-                    gl_PointSize = 2.5 * (40.0 / -mvPosition.z);
+                    
+                    gl_PointSize = (2.0 + (aRandom * 0.5)) * (40.0 / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
 
-                    // --- ALPHA ---
-                    float activeAlpha = 0.1 + (uAudio * 0.4) + (pulseGate * uAudio * 0.1);
-                    vAlpha = mix(0.08, activeAlpha, ease);
+                    float activeAlpha = 0.1 + (uAudio * 0.5) + (eruptionMask * uAudio * 0.5);
+                    vAlpha = mix(0.15, activeAlpha, ease);
                 }
             `,
             fragmentShader: `
@@ -147,15 +135,19 @@ export class ChoirBorderRed {
 
                 void main() {
                     float dist = distance(gl_PointCoord, vec2(0.5));
-                    float strength = 1.0 - step(0.5, dist);
+                    float strength = 1.0 - smoothstep(0.0, 0.5, dist);
+                    strength = pow(strength, 3.0);
                     gl_FragColor = vec4(uColor, strength * vAlpha);
                 }
             `
         });
 
         this.mesh = new THREE.Points(geometry, material);
-        this.mesh.rotation.set(0, 0, 0);
-        this.mesh.position.set(0, 0, -50); 
+        
+        // --- POSITION SET (Lower than Blue) ---
+        this.mesh.rotation.x = -Math.PI / 2.5; 
+        this.mesh.rotation.z = Math.PI / 4;
+        this.mesh.position.set(0, 0, -90); 
 
         scene.add(this.mesh);
 
@@ -173,24 +165,13 @@ export class ChoirBorderRed {
             this.mesh.material.uniforms.uFormation.value = this.formationLevel;
         }
 
-        let rawBass = (audio.bass * 0.6) + (audio.lowMid * 0.4);
-
-        // --- NEW: THRESHOLD GATE ---
-        // If the sound is below 30%, ignore it completely.
-        // This stops the border from vibrating on quiet sounds.
-        if (rawBass < 0.3) {
-            rawBass = 0.0;
-        } else {
-            // Remap the remaining range (0.3 to 1.0) back to (0.0 to 1.0)
-            rawBass = (rawBass - 0.3) / 0.7;
-        }
-
-        // Apply Exponent for punchiness
-        let target = Math.pow(rawBass, 2.5); 
-
-        // Faster Decay to make beats distinct
-        const attack = 0.8; 
-        const decay = 0.4; // Was 0.2 (Slower), increased to 0.4 to clear the signal faster
+        // --- AUDIO LOGIC: NOTES (MIDS) ---
+        // We combine Low Mids (Body of synth/guitar) and High Mids (Presence).
+        // We ignore Bass (Kick drum) and Treble (Air/Hiss).
+        const target = (audio.lowMid * 0.5) + (audio.highMid * 0.5);
+        
+        const attack = 0.1; 
+        const decay = 0.03; 
         
         if (target > this.smoothValue) this.smoothValue += (target - this.smoothValue) * attack;
         else this.smoothValue += (target - this.smoothValue) * decay;

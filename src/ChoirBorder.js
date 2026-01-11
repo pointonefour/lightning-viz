@@ -12,7 +12,7 @@ export class ChoirBorder {
 
         // --- 1. SETUP MATH ---
         const dummyObj = new THREE.Object3D();
-        dummyObj.position.set(0, -5, -90); 
+        dummyObj.position.set(0, 20, -90); 
         dummyObj.rotation.x = -Math.PI / 2.5;
         dummyObj.rotation.z = Math.PI / 4;
         dummyObj.updateMatrixWorld();
@@ -53,7 +53,7 @@ export class ChoirBorder {
             uniforms: {
                 uTime: { value: 0 },
                 uAudio: { value: 0 }, 
-                uColor: { value: new THREE.Color(0.3, 0.9, 2.5) },
+                uColor: { value: new THREE.Color(0.4, 0.9, 2.5) },
                 uFormation: { value: 0.0 } 
             },
             vertexShader: `
@@ -144,7 +144,7 @@ export class ChoirBorder {
         this.mesh = new THREE.Points(geometry, material);
         this.mesh.rotation.x = -Math.PI / 2.5; 
         this.mesh.rotation.z = Math.PI / 4;
-        this.mesh.position.set(0, -5, -90); 
+        this.mesh.position.set(0, 5, -90); 
 
         scene.add(this.mesh);
 

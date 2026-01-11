@@ -97,6 +97,7 @@ export class AudioGrid {
         this.mesh.rotation.x = -Math.PI / 2.5; 
         this.mesh.rotation.z = Math.PI / 4;  
         this.mesh.position.z = -60; 
+        this.mesh.position.y = 8;
         
         this.mesh.visible = false;
         scene.add(this.mesh);
