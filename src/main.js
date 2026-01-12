@@ -11,7 +11,7 @@ import { AudioGrid } from './grid.js';
 import { createStartUI } from './ui1.js';
 import { ChoirBorder } from './ChoirBorder.js';
 import { ChoirBorderRed } from './ChoirBorderRed.js';
-import { ChoirCircle } from './ChoirCircle.js'
+import { ChoirCircle } from './ChoirCircle.js';
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -19,31 +19,30 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 let scene, camera, renderer, borderSystem, sound;
-let bloomComposer, finalComposer;
+// We now have TWO bloom composers
+let bloomComposerSoft, bloomComposerStrong, finalComposer;
 let trees = [];
 let voiceTrees = [];
 let streaksPass, glitchPass, invertPass;
 let hud, audioGrid;
 let choirBorder, choirRed, choirCircle;
 
-// Toggle Flags
 let isRedActive = false;
 let isTreeActive = true;
 let isStreakActive = false; 
 let isGlitchActive = false;
-
-// Fade Values
 let streakFade = 0.0; 
 let glitchFade = 0.0;
 
 const frustumSize = 100;
 const clock = new THREE.Clock();
 
-// --- MIX SHADER (For combining Bloom + Normal) ---
-const MixShader = {
+// --- MULTI-LAYER MIX SHADER ---
+const FinalMixShader = {
     uniforms: {
         baseTexture: { value: null },
-        bloomTexture: { value: null }
+        bloomTextureSoft: { value: null },   // Layer 1 Result
+        bloomTextureStrong: { value: null }  // Layer 2 Result
     },
     vertexShader: `
         varying vec2 vUv;
@@ -54,13 +53,16 @@ const MixShader = {
     `,
     fragmentShader: `
         uniform sampler2D baseTexture;
-        uniform sampler2D bloomTexture;
+        uniform sampler2D bloomTextureSoft;
+        uniform sampler2D bloomTextureStrong;
         varying vec2 vUv;
         void main() {
             vec4 base = texture2D(baseTexture, vUv);
-            vec4 bloom = texture2D(bloomTexture, vUv);
-            // Additive mixing
-            gl_FragColor = base + bloom;
+            vec4 soft = texture2D(bloomTextureSoft, vUv);
+            vec4 strong = texture2D(bloomTextureStrong, vUv);
+            
+            // Additive Mixing: Base + Soft Bloom + Strong Bloom
+            gl_FragColor = base + soft + strong;
         }
     `
 };
@@ -79,23 +81,22 @@ function init() {
     renderer.toneMapping = THREE.ReinhardToneMapping;
     document.body.appendChild(renderer.domElement);
 
-    // 1. Init Helpers
+    // --- SYSTEMS ---
     hud = new AnalysisHUD();
     audioGrid = new AudioGrid(scene);
-    
-    // --- CREATE VISUALS ---
     choirBorder = new ChoirBorder(scene);
     choirRed = new ChoirBorderRed(scene);
     choirCircle = new ChoirCircle(scene);
 
-    // --- ENABLE LAYER 1 (BLOOM) ---
-    // Only objects in Layer 1 will trigger the bloom effect
-    if(audioGrid.mesh) audioGrid.mesh.layers.enable(1);
-    if(choirBorder.mesh) choirBorder.mesh.layers.enable(1);
-    if(choirRed.mesh) choirRed.mesh.layers.enable(1);
-    if(choirCircle.mesh) choirCircle.mesh.layers.enable(1);
+    // --- ASSIGN LAYERS ---
+    // Layer 1 = SOFT BLOOM (Trees, Grid)
+    // Layer 2 = STRONG BLOOM (Choir Elements)
+    
+    if(audioGrid.mesh) audioGrid.mesh.layers.enable(1); 
+    if(choirBorder.mesh) choirBorder.mesh.layers.enable(2); // Layer 2
+    if(choirRed.mesh) choirRed.mesh.layers.enable(2);       // Layer 2
+    if(choirCircle.mesh) choirCircle.mesh.layers.enable(1); // Layer 2
 
-    // --- CREATE UI ---
     createStartUI(sound, () => {
         console.log("Ignition Sequence Started");
         if (choirBorder) choirBorder.ignite();
@@ -103,81 +104,83 @@ function init() {
         if (choirCircle) choirCircle.ignite();
     });
 
-    // 2. Setup Post-Processing (Selective Bloom)
+    // --- COMPOSER SETUP ---
     const renderScene = new RenderPass(scene, camera);
 
-    // A. BLOOM COMPOSER
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.threshold = 0.0;
-    bloomPass.strength = 2.0; 
-    bloomPass.radius = 0.5;
+    // 1. SOFT BLOOM COMPOSER (For Layer 1)
+    const bloomPassSoft = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPassSoft.threshold = 0.0;
+    bloomPassSoft.strength = 2.0; 
+    bloomPassSoft.radius = 0.6;   // Tight glow
 
-    bloomComposer = new EffectComposer(renderer);
-    bloomComposer.renderToScreen = false; // Important: Don't draw yet
-    bloomComposer.addPass(renderScene);
-    bloomComposer.addPass(bloomPass);
+    bloomComposerSoft = new EffectComposer(renderer);
+    bloomComposerSoft.renderToScreen = false;
+    bloomComposerSoft.addPass(renderScene);
+    bloomComposerSoft.addPass(bloomPassSoft);
 
-    // B. FX PASSES
-    streaksPass = new ShaderPass(StreaksShader);
-    if (streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
-    
-    glitchPass = new ShaderPass(GlitchShader);
-    
-    invertPass = new ShaderPass(InvertShader);
-    invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    // 2. STRONG BLOOM COMPOSER (For Layer 2)
+    const bloomPassStrong = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPassStrong.threshold = 0.0;
+    bloomPassStrong.strength = 3.0; // High strength for Choir
+    bloomPassStrong.radius = 0.6;   // Wide glow
 
-    // C. FINAL COMPOSER (Mixes Bloom + FX)
-    const finalPass = new ShaderPass(
+    bloomComposerStrong = new EffectComposer(renderer);
+    bloomComposerStrong.renderToScreen = false;
+    bloomComposerStrong.addPass(renderScene);
+    bloomComposerStrong.addPass(bloomPassStrong);
+
+    // 3. FINAL COMPOSER
+    const finalMixPass = new ShaderPass(
         new THREE.ShaderMaterial({
             uniforms: {
                 baseTexture: { value: null },
-                bloomTexture: { value: bloomComposer.renderTarget2.texture }
+                bloomTextureSoft: { value: bloomComposerSoft.renderTarget2.texture },
+                bloomTextureStrong: { value: bloomComposerStrong.renderTarget2.texture }
             },
-            vertexShader: MixShader.vertexShader,
-            fragmentShader: MixShader.fragmentShader,
+            vertexShader: FinalMixShader.vertexShader,
+            fragmentShader: FinalMixShader.fragmentShader,
             defines: {}
         }), "baseTexture"
     );
-    finalPass.needsSwap = true;
+    finalMixPass.needsSwap = true;
+
+    // FX
+    streaksPass = new ShaderPass(StreaksShader);
+    if (streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    glitchPass = new ShaderPass(GlitchShader);
+    invertPass = new ShaderPass(InvertShader);
+    invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 
     finalComposer = new EffectComposer(renderer);
     finalComposer.addPass(renderScene);
-    finalComposer.addPass(finalPass); // 1. Mix the Bloom
-    finalComposer.addPass(streaksPass); // 2. Add Streaks
-    finalComposer.addPass(glitchPass); // 3. Add Glitch
-    finalComposer.addPass(invertPass); // 4. Add Invert
+    finalComposer.addPass(finalMixPass); // Mix everything here
+    finalComposer.addPass(streaksPass); 
+    finalComposer.addPass(glitchPass); 
+    finalComposer.addPass(invertPass);
 
-    // 3. Setup Systems
+    // Systems
     borderSystem = new BorderSystem(25, frustumSize * aspect, frustumSize);
-
     borderSystem.seeds.forEach(seed => {
         const tree = new Tree(seed, borderSystem, scene);
+        // Important: Trees go to Layer 1 (Soft Bloom)
+        if(tree.mesh) tree.mesh.layers.enable(1); 
         trees.push(tree);
+        
         const vTree = new VoiceTree(seed, borderSystem, scene);
         voiceTrees.push(vTree);
     });
 
-    // 4. Controls
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
-        
-        if (key === 'r') {
-            isRedActive = !isRedActive;
-            voiceTrees.forEach(vt => vt.toggle(isRedActive));
-        }
-        if (key === 't') {
-            isTreeActive = !isTreeActive;
-            trees.forEach(t => t.toggle(isTreeActive));
-        }
+        if (key === 'r') { isRedActive = !isRedActive; voiceTrees.forEach(vt => vt.toggle(isRedActive)); }
+        if (key === 't') { isTreeActive = !isTreeActive; trees.forEach(t => t.toggle(isTreeActive)); }
         if (key === 's') isStreakActive = !isStreakActive;
         if (key === 'g') isGlitchActive = !isGlitchActive;
         if (key === 'p') audioGrid.toggle();
         if (key === 'h') hud.toggle();
     });
 
-    // Handle Resize
     window.addEventListener('resize', onWindowResize);
-
     animate();
 }
 
@@ -190,7 +193,8 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     
-    bloomComposer.setSize(window.innerWidth, window.innerHeight);
+    bloomComposerSoft.setSize(window.innerWidth, window.innerHeight);
+    bloomComposerStrong.setSize(window.innerWidth, window.innerHeight);
     finalComposer.setSize(window.innerWidth, window.innerHeight);
     
     if(streaksPass) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
@@ -206,21 +210,15 @@ function animate() {
 
     const legacyAudio = {
         bass: audioData.bass,
-        mid: (audioData.lowMid + audioData.highMid) / 2,
+        mid: (audioData.lowMid + audioData.highMid) / 2, 
         treble: audioData.treble
     };
 
-    // --- UPDATES ---
     if(audioGrid) audioGrid.update(audioData, time);
     if (borderSystem) borderSystem.update(time, legacyAudio);
     trees.forEach(t => t.update(legacyAudio, time));
     voiceTrees.forEach(vt => vt.update(legacyAudio, time));
 
-    if (invertPass && hud) {
-        invertPass.uniforms.uActive.value = hud.isActive ? 1.0 : 0.0;
-        invertPass.uniforms.uBoxes.value = hud.shaderData;
-    }
-    
     if (choirBorder) choirBorder.update(audioData, time);
     if (choirRed) choirRed.update(audioData, time);
     if (choirCircle) choirCircle.update(audioData, time);
@@ -228,10 +226,14 @@ function animate() {
     if(hud) {
         const allTrees = [...trees, ...voiceTrees];
         hud.update(allTrees, camera, time);
+        if (invertPass) {
+            invertPass.uniforms.uActive.value = hud.isActive ? 1.0 : 0.0;
+            invertPass.uniforms.uBoxes.value = hud.shaderData;
+        }
     }
 
     if (streaksPass) {
-        if(streaksPass.uniforms.uTreble) streaksPass.uniforms.uTreble.value = legacyAudio.treble;
+        streaksPass.uniforms.uTreble.value = legacyAudio.treble;
         const targetStreak = isStreakActive ? 1.0 : 0.0;
         streakFade += (targetStreak - streakFade) * 0.05; 
         streaksPass.uniforms.uActive.value = streakFade;
@@ -245,18 +247,20 @@ function animate() {
         glitchPass.uniforms.uActive.value = glitchFade;
     }
 
-    // --- SELECTIVE BLOOM RENDER PIPELINE ---
+    // --- MULTI-PASS RENDER LOOP ---
     
-    // 1. Render Layer 1 (Glowing Objects) to bloomComposer
-    // We set camera to ONLY see Layer 1
-    camera.layers.set(1); 
-    bloomComposer.render();
+    // 1. Render Soft Bloom (Layer 1)
+    camera.layers.set(1);
+    bloomComposerSoft.render();
     
-    // 2. Render Everything to finalComposer
-    // We set camera to see Layer 0 AND Layer 1
-    camera.layers.set(0); 
-    camera.layers.enable(1); 
+    // 2. Render Strong Bloom (Layer 2)
+    camera.layers.set(2);
+    bloomComposerStrong.render();
     
+    // 3. Render Final Scene (Layer 0 + 1 + 2)
+    camera.layers.set(0);
+    camera.layers.enable(1);
+    camera.layers.enable(2);
     finalComposer.render();
 }
 

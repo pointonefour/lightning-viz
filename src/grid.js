@@ -17,7 +17,7 @@ export class AudioGrid {
                 uMid: { value: 0 },
                 uTreble: { value: 0 },
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color(0.0, 0.1, 0.1) },
+                uColor: { value: new THREE.Color(0.0, 0.1, 0.4) },
                 uStartupTime: { value: 0.0 } 
             },
             vertexShader: `
@@ -101,6 +101,7 @@ export class AudioGrid {
         
         this.mesh.visible = false;
         scene.add(this.mesh);
+        this.mesh.layers.enable(2);
     }
 
     toggle() {

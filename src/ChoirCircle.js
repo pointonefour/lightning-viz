@@ -4,7 +4,7 @@ import * as THREE from 'three';
 export class ChoirCircle {
     constructor(scene) {
         // --- CONFIGURATION ---
-        const particleCount = 12000; 
+        const particleCount = 16000; 
         
         // We use 'angle' instead of 'progress' for a circle
         const angles = new Float32Array(particleCount); 
@@ -60,7 +60,7 @@ export class ChoirCircle {
                 uAudioHigh: { value: 0 }, // For Top Half
                 uAudioLow: { value: 0 },  // For Bottom Half
                 // VIOLET / MYSTIC COLOR
-                uColor: { value: new THREE.Color(0.2, 0.3, 0.36) },
+                uColor: { value: new THREE.Color(0.0, 0.1, 0.5) },
                 uFormation: { value: 0.0 } 
             },
             vertexShader: `

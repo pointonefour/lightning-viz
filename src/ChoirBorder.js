@@ -147,6 +147,8 @@ export class ChoirBorder {
         this.mesh.position.set(0, 5, -90); 
 
         scene.add(this.mesh);
+        this.mesh.layers.enable(2);
+
 
         this.smoothValue = 0;
         this.isIgnited = false;

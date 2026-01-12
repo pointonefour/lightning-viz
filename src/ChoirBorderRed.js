@@ -56,7 +56,7 @@ export class ChoirBorderRed {
             uniforms: {
                 uTime: { value: 0 },
                 uAudio: { value: 0 }, 
-                uColor: { value: new THREE.Color(1.1, 1.4, 0.9) },
+                uColor: { value: new THREE.Color(1.1, 1.9, 0.9) },
                 uFormation: { value: 0.0 } 
             },
             vertexShader: `
@@ -149,6 +149,7 @@ export class ChoirBorderRed {
         this.mesh.rotation.z = Math.PI / 4;
         this.mesh.position.set(0, 0, -90); 
 
+        this.mesh.layers.enable(2);
         scene.add(this.mesh);
 
         this.smoothValue = 0;
