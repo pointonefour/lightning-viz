@@ -126,19 +126,27 @@ export class Tree {
         this.mesh = new THREE.LineSegments(geometry, this.material);
         this.mesh.frustumCulled = false;
         this.scene.add(this.mesh);
+        
+        // --- CRITICAL FOR SELECTIVE BLOOM ---
+        // This puts the tree on Layer 1, which the Bloom Composer is watching.
+        this.mesh.layers.enable(1); 
     }
 
     updateColorBuffer() {
         for (let i = 0; i < this.skeleton.length; i++) {
             const seg = this.skeleton[i];
-            const r = seg.color.r;
-            const g = seg.color.g;
-            const b = seg.color.b;
             const idx = i * 6; 
+            
+            // --- BOOSTED BRIGHTNESS ---
+            // Increased boost from +0.3 to +0.5 to make thin lines glow hotter
+            const r = Math.min(1, seg.color.r + 0.5);
+            const g = Math.min(1, seg.color.g + 0.5);
+            const b = Math.min(1, seg.color.b + 0.5);
+
             for(let k=0; k<6; k+=3) {
-                this.colors[idx+k]   = Math.min(1, seg.color.r + 0.3);
-                this.colors[idx+k+1] = Math.min(1, seg.color.g + 0.3);
-                this.colors[idx+k+2] = Math.min(1, seg.color.b + 0.3);
+                this.colors[idx+k]   = r;
+                this.colors[idx+k+1] = g;
+                this.colors[idx+k+2] = b;
             }
         }
         this.mesh.geometry.attributes.color.needsUpdate = true;
@@ -147,9 +155,8 @@ export class Tree {
     update(audio, time) {
         if (!this.mesh) return;
 
-        // --- MASTER FADE LOGIC (The Only New Part) ---
         const targetMaster = this.isActive ? 1.0 : 0.0;
-        this.masterAlpha += (targetMaster - this.masterAlpha) * 0.05; // Fade speed
+        this.masterAlpha += (targetMaster - this.masterAlpha) * 0.05; 
 
         if (this.masterAlpha < 0.01 && !this.isActive) {
             this.mesh.visible = false;
@@ -163,7 +170,7 @@ export class Tree {
             this.opacity = 0;
             this.mesh.visible = false;
             this.isFlashing = false;
-            return; // Don't process geometry if hidden
+            return; 
         }
 
         const dt = 0.016; 
@@ -193,7 +200,6 @@ export class Tree {
             }
         }
 
-        // Apply Fade
         this.material.opacity = this.opacity * this.masterAlpha;
 
         if (this.material.opacity < 0.01) return;
