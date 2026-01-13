@@ -4156,7 +4156,7 @@ void main() {
 
             gl_FragColor = color;
         }
-    `};var zc=class{constructor(e){this.isActive=!1,this.isClosing=!1,this.startupTimer=0,this.mesh=new br(new wi(50,50,20,20),new jr({wireframe:!0,transparent:!0,side:2,uniforms:{uBass:{value:0},uMid:{value:0},uTreble:{value:0},uTime:{value:0},uColor:{value:new X(0,.1,.4)},uStartupTime:{value:0}},vertexShader:`
+    `};var zc=class{constructor(e){this.isActive=!1,this.isClosing=!1,this.startupTimer=0,this.mesh=new br(new wi(30,30,20,20),new jr({wireframe:!0,transparent:!0,side:2,uniforms:{uBass:{value:0},uMid:{value:0},uTreble:{value:0},uTime:{value:0},uColor:{value:new X(.3,1.5,1.4)},uStartupTime:{value:0}},vertexShader:`
                 uniform float uBass;
                 uniform float uMid;
                 uniform float uTreble;
@@ -4225,7 +4225,7 @@ void main() {
 
                     gl_FragColor = vec4(uColor, alpha);
                 }
-            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.z=-60,this.mesh.position.y=8,this.mesh.visible=!1,e.add(this.mesh),this.mesh.layers.enable(2)}toggle(){!this.isActive&&!this.isClosing?(this.isActive=!0,this.mesh.visible=!0,this.startupTimer=0):this.isActive&&(this.isActive=!1,this.isClosing=!0),console.log(`GRID STATE:`,this.isActive?`OPENING`:`CLOSING`)}update(e,t){if(!this.isActive&&!this.isClosing&&this.mesh.visible){this.mesh.visible=!1;return}if(!this.mesh.visible&&!this.isActive)return;let n=.05;this.isActive?this.startupTimer<3&&(this.startupTimer+=n):this.isClosing&&(this.startupTimer>0?this.startupTimer-=n:(this.isClosing=!1,this.mesh.visible=!1,this.startupTimer=0)),this.mesh.material.uniforms.uStartupTime.value=this.startupTimer,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uBass.value=(e.bass||0)*5,this.mesh.material.uniforms.uMid.value=(e.mid||0)*5,this.mesh.material.uniforms.uTreble.value=(e.treble||0)*5}};function Bc(e,t){let n=document.createElement(`div`);document.body.appendChild(n);let r=document.createElement(`button`);r.innerHTML=`IGNITE SYSTEM`,r.style.cssText=`
+            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.z=-60,this.mesh.position.y=0,this.mesh.visible=!1,e.add(this.mesh)}toggle(){!this.isActive&&!this.isClosing?(this.isActive=!0,this.mesh.visible=!0,this.startupTimer=0):this.isActive&&(this.isActive=!1,this.isClosing=!0),console.log(`GRID STATE:`,this.isActive?`OPENING`:`CLOSING`)}update(e,t){if(!this.isActive&&!this.isClosing&&this.mesh.visible){this.mesh.visible=!1;return}if(!this.mesh.visible&&!this.isActive)return;let n=.05;this.isActive?this.startupTimer<3&&(this.startupTimer+=n):this.isClosing&&(this.startupTimer>0?this.startupTimer-=n:(this.isClosing=!1,this.mesh.visible=!1,this.startupTimer=0)),this.mesh.material.uniforms.uStartupTime.value=this.startupTimer,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uBass.value=(e.bass||0)*5,this.mesh.material.uniforms.uMid.value=(e.mid||0)*5,this.mesh.material.uniforms.uTreble.value=(e.treble||0)*5}};function Bc(e,t){let n=document.createElement(`div`);document.body.appendChild(n);let r=document.createElement(`button`);r.innerHTML=`IGNITE SYSTEM`,r.style.cssText=`
         position: fixed; 
         top: 50%; 
         left: 50%; 
@@ -4261,7 +4261,7 @@ void main() {
         font-family: monospace; font-weight: bold; font-size: 12px;
         padding: 8px 16px; cursor: pointer; border-radius: 20px;
         transition: all 0.3s; outline: none;
-    `,i=document.createElement(`button`);i.innerHTML=`MIC`,i.style.cssText=r;let a=document.createElement(`button`);a.innerHTML=`SYS`,a.style.cssText=r;let o=document.createElement(`div`);o.style.cssText=`width: 1px; height: 15px; background: rgba(255,255,255,0.3); margin: 0 2px;`;let s=(e,t)=>{e.style.background=`white`,e.style.color=`black`,e.style.boxShadow=`0 0 10px rgba(255,255,255,0.5)`,t.style.background=`transparent`,t.style.color=`rgba(255,255,255,0.5)`,t.style.boxShadow=`none`};s(i,a),i.onclick=async()=>{s(i,a),await e.initMic()},a.onclick=async()=>{s(a,i),await e.initSystem()},t.appendChild(i),t.appendChild(o),t.appendChild(a),document.body.appendChild(t)}var Hc=class{constructor(e){let t=16e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,20,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*4,r[e]=(Math.random()-.5)*.2,i[e]=Math.random();let t=(Math.random()-.5)*400,o=(Math.random()-.5)*250;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aProgress`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(.4,.9,2.5)},uFormation:{value:0}},vertexShader:`
+    `,i=document.createElement(`button`);i.innerHTML=`MIC`,i.style.cssText=r;let a=document.createElement(`button`);a.innerHTML=`SYS`,a.style.cssText=r;let o=document.createElement(`div`);o.style.cssText=`width: 1px; height: 15px; background: rgba(255,255,255,0.3); margin: 0 2px;`;let s=(e,t)=>{e.style.background=`white`,e.style.color=`black`,e.style.boxShadow=`0 0 10px rgba(255,255,255,0.5)`,t.style.background=`transparent`,t.style.color=`rgba(255,255,255,0.5)`,t.style.boxShadow=`none`};s(i,a),i.onclick=async()=>{s(i,a),await e.initMic()},a.onclick=async()=>{s(a,i),await e.initSystem()},t.appendChild(i),t.appendChild(o),t.appendChild(a),document.body.appendChild(t)}var Hc=class{constructor(e){let t=16e4,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,0,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*4,r[e]=(Math.random()-.5)*.2,i[e]=Math.random();let t=(Math.random()-.5)*400,o=(Math.random()-.5)*250;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aProgress`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(1.4,.5,.05)},uFormation:{value:0}},vertexShader:`
                 uniform float uTime;
                 uniform float uAudio;
                 uniform float uFormation;
@@ -4282,7 +4282,7 @@ void main() {
 
                 void main() {
                     // --- TARGET: BORDER ---
-                    float size = 60.0;
+                    float size = 30.0;
                     float halfSize = size / 2.0;
                     float speed = 0.2; 
                     float currentT = mod(aProgress + (uTime * speed), 4.0);
@@ -4300,7 +4300,8 @@ void main() {
                     float noiseScale = 0.1; 
                     float noiseVal = noise(vec2(borderPos.x * noiseScale + uTime, borderPos.y * noiseScale));
                     float eruptionMask = smoothstep(0.3, 0.8, noiseVal);
-                    float expansionStrength = uAudio * 0.8 * eruptionMask; 
+                    
+                    float expansionStrength = uAudio * 2.5 * eruptionMask; 
                     vec3 radialMove = vec3(borderPos.x, borderPos.y, 0.0) * expansionStrength;
                     
                     vec3 dir = normalize(vec3(borderPos.x, borderPos.y, 0.0));
@@ -4311,10 +4312,8 @@ void main() {
                     borderPos += radialMove + swirlMove;
                     borderPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
 
-                    // --- START: GENTLE WAVING WALL ---
+                    // --- START STATE ---
                     vec3 startPos = aStartPos;
-                    // Slow sine wave (uTime * 0.5)
-                    // Amplitude 4.0 creates visible but gentle breathing
                     startPos.z += sin(aStartPos.x * 0.02 + uTime * 0.5) * 4.0; 
 
                     // --- MIX ---
@@ -4323,13 +4322,10 @@ void main() {
 
                     vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
                     
-                    // --- SIZE ---
-                    // Kept uniform (2.0 + small random) to prevent bloom artifacts
                     gl_PointSize = (2.0 + (aRandom * 0.5)) * (40.0 / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
 
-                    // --- ALPHA ---
-                    float borderAlpha = 0.1 + (uAudio * 0.4) + (eruptionMask * uAudio * 0.4);
+                    float borderAlpha = 0.1 + (uAudio * 0.8) + (eruptionMask * uAudio * 0.5);
                     vAlpha = mix(0.15, borderAlpha, ease);
                 }
             `,fragmentShader:`
@@ -4342,13 +4338,13 @@ void main() {
                     strength = pow(strength, 3.0);
                     gl_FragColor = vec4(uColor, strength * vAlpha);
                 }
-            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,5,-90),e.add(this.mesh),this.mesh.layers.enable(2),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.01,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.highMid*.6+e.treble*.4;n>this.smoothValue?this.smoothValue+=(n-this.smoothValue)*.1:this.smoothValue+=(n-this.smoothValue)*.03,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Uc=class{constructor(e){let t=16e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,-10,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*4,r[e]=(Math.random()-.5)*.2,i[e]=Math.random();let t=(Math.random()-.5)*450,o=(Math.random()-.5)*300;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aProgress`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(1.1,1.9,.9)},uFormation:{value:0}},vertexShader:`
+            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,0,-90),e.add(this.mesh),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.01,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.lowMid||0,r=e.highMid||0,i=e.treble||0,a=(n*.4+r*.4+i*.2)**1.5;a>this.smoothValue?this.smoothValue+=(a-this.smoothValue)*.2:this.smoothValue+=(a-this.smoothValue)*.1,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Uc=class{constructor(e){let t=16e4,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,-15,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*Math.PI*2,r[e]=Math.sqrt(Math.random()),i[e]=Math.random();let t=(Math.random()-.5)*450,o=(Math.random()-.5)*300;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aAngle`,new Z(n,1)),l.setAttribute(`aRadiusRatio`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudio:{value:0},uColor:{value:new X(1.8,.5,.05)},uFormation:{value:0}},vertexShader:`
                 uniform float uTime;
-                uniform float uAudio;
+                uniform float uAudio; 
                 uniform float uFormation;
                 
-                attribute float aProgress;
-                attribute float aOffset;
+                attribute float aAngle;
+                attribute float aRadiusRatio;
                 attribute float aRandom;
                 attribute vec3 aStartPos;
                 
@@ -4362,46 +4358,53 @@ void main() {
                 }
 
                 void main() {
-                    // --- TARGET: TWIN CONFIGURATION ---
-                    float size = 80.0;
-                    float halfSize = size / 2.0;
-                    float speed = 0.2; 
-                    float currentT = mod(aProgress + (uTime * speed), 4.0);
-                    float side = floor(currentT);
-                    float t = fract(currentT);
+                    // --- TARGET: THICK DISK / PATH ---
+                    float innerRadius = 50.0;
+                    float outerRadius = 80.0;
+                    
+                    // Calculate specific radius for this particle
+                    float r = mix(innerRadius, outerRadius, aRadiusRatio);
+                    
+                    // Orbit Speed (slower near outside for realism)
+                    float speed = 0.2 * (50.0 / r); 
+                    float currentAngle = mod(aAngle + (uTime * speed), 6.28318);
 
-                    vec3 borderPos = vec3(0.0);
-                    if (side == 0.0) { borderPos.x = halfSize + aOffset; borderPos.y = mix(-halfSize, halfSize, t); } 
-                    else if (side == 1.0) { borderPos.x = mix(halfSize, -halfSize, t); borderPos.y = halfSize + aOffset; } 
-                    else if (side == 2.0) { borderPos.x = -halfSize + aOffset; borderPos.y = mix(halfSize, -halfSize, t); } 
-                    else { borderPos.x = mix(-halfSize, halfSize, t); borderPos.y = -halfSize + aOffset; }
-                    borderPos.z = (aRandom - 0.5) * 0.5;
+                    // Base Position on Disk
+                    vec3 diskPos = vec3(0.0);
+                    diskPos.x = cos(currentAngle) * r;
+                    diskPos.y = sin(currentAngle) * r;
+                    diskPos.z = (aRandom - 0.5) * 2.0; // Small thickness Z
 
-                    // --- VORTEX DISPLACEMENT (Twin Logic) ---
+                    // --- AUDIO VORTEX DISPLACEMENT ---
                     float noiseScale = 0.1; 
-                    // Offset time slightly so it ripples differently than Blue
-                    float noiseVal = noise(vec2(borderPos.x * noiseScale + uTime + 10.0, borderPos.y * noiseScale));
+                    // Offset time slightly
+                    float noiseVal = noise(vec2(diskPos.x * noiseScale + uTime + 10.0, diskPos.y * noiseScale));
                     float eruptionMask = smoothstep(0.3, 0.8, noiseVal);
                     
                     float expansionStrength = uAudio * 0.8 * eruptionMask; 
-                    vec3 radialMove = vec3(borderPos.x, borderPos.y, 0.0) * expansionStrength;
                     
-                    vec3 dir = normalize(vec3(borderPos.x, borderPos.y, 0.0));
+                    // Move Outwards
+                    vec3 radialMove = vec3(diskPos.x, diskPos.y, 0.0) * (expansionStrength * 0.5); // Less expansion for disk
+                    
+                    // Swirl
+                    vec3 dir = normalize(vec3(diskPos.x, diskPos.y, 0.0));
                     vec3 perp = vec3(-dir.y, dir.x, 0.0);
                     float curlStrength = sin((uTime * 3.0) + (aRandom * 10.0)); 
                     vec3 swirlMove = perp * curlStrength * (length(radialMove) * 0.5);
 
-                    borderPos += radialMove + swirlMove;
-                    borderPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
+                    diskPos += radialMove + swirlMove;
+                    
+                    // Z-Bump (Tornado effect)
+                    diskPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
 
-                    // --- START STATE: RED WALL WAVINESS ---
+                    // --- START STATE ---
                     vec3 startPos = aStartPos;
                     startPos.z += sin(aStartPos.x * 0.05 + uTime * 2.0) * 4.0;
                     startPos.y += cos(aStartPos.y * 0.05 + uTime * 1.5) * 2.0;
 
                     // --- MIX ---
                     float ease = uFormation * uFormation * (3.0 - 2.0 * uFormation);
-                    vec3 finalPos = mix(startPos, borderPos, ease);
+                    vec3 finalPos = mix(startPos, diskPos, ease);
 
                     vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
                     
@@ -4421,7 +4424,7 @@ void main() {
                     strength = pow(strength, 3.0);
                     gl_FragColor = vec4(uColor, strength * vAlpha);
                 }
-            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,0,-90),this.mesh.layers.enable(2),e.add(this.mesh),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.015,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.lowMid*.5+e.highMid*.5;n>this.smoothValue?this.smoothValue+=(n-this.smoothValue)*.1:this.smoothValue+=(n-this.smoothValue)*.03,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Wc=class{constructor(e){let t=16e3,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,-25,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*Math.PI*2,r[e]=(Math.random()-.5)*2,i[e]=Math.random();let t=(Math.random()-.5)*350,o=(Math.random()-.5)*200;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aAngle`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudioHigh:{value:0},uAudioLow:{value:0},uColor:{value:new X(0,.1,.5)},uFormation:{value:0}},vertexShader:`
+            `})),this.mesh.rotation.x=-Math.PI/2.5,this.mesh.rotation.z=Math.PI/4,this.mesh.position.set(0,-5,-90),e.add(this.mesh),this.smoothValue=0,this.isIgnited=!1,this.formationLevel=0}ignite(){this.isIgnited=!0}update(e,t){this.isIgnited&&this.formationLevel<1&&(this.formationLevel+=.015,this.formationLevel>1&&(this.formationLevel=1),this.mesh.material.uniforms.uFormation.value=this.formationLevel);let n=e.lowMid*.5+e.highMid*.5;n>this.smoothValue?this.smoothValue+=(n-this.smoothValue)*.1:this.smoothValue+=(n-this.smoothValue)*.03,this.mesh.material.uniforms.uTime.value=t,this.mesh.material.uniforms.uAudio.value=this.smoothValue}},Wc=class{constructor(e){let t=16e4,n=new Float32Array(t),r=new Float32Array(t),i=new Float32Array(t),a=new Float32Array(t*3),o=new En;o.position.set(0,-25,-90),o.rotation.x=-Math.PI/2.5,o.rotation.z=Math.PI/4,o.updateMatrixWorld();let s=o.matrixWorld.clone().invert(),c=new q;for(let e=0;e<t;e++){n[e]=Math.random()*Math.PI*2,r[e]=(Math.random()-.5)*2,i[e]=Math.random();let t=(Math.random()-.5)*350,o=(Math.random()-.5)*200;c.set(t,o,0),c.applyMatrix4(s),a[e*3]=c.x,a[e*3+1]=c.y,a[e*3+2]=c.z}let l=new cr;l.setAttribute(`position`,new Z(new Float32Array(t*3),3)),l.setAttribute(`aAngle`,new Z(n,1)),l.setAttribute(`aOffset`,new Z(r,1)),l.setAttribute(`aRandom`,new Z(i,1)),l.setAttribute(`aStartPos`,new Z(a,3)),this.mesh=new yi(l,new jr({transparent:!0,depthWrite:!1,blending:2,uniforms:{uTime:{value:0},uAudioHigh:{value:0},uAudioLow:{value:0},uColor:{value:new X(0,.1,.5)},uFormation:{value:0}},vertexShader:`
                 uniform float uTime;
                 uniform float uAudioHigh; 
                 uniform float uAudioLow; 
@@ -4443,7 +4446,7 @@ void main() {
 
                 void main() {
                     // --- TARGET: CIRCLE ---
-                    float radius = 80.0 + aOffset; // Base Radius
+                    float radius = 50.0 + aOffset; // Base Radius
                     float speed = 0.3; 
                     
                     // Continuous flow around circle
@@ -4658,7 +4661,7 @@ void main() {
 					float bloomAlpha = max( bloom.r, max( bloom.g, bloom.b ) );
 					gl_FragColor = vec4( bloom, bloomAlpha );
 
-				}`})}};nl.BlurDirectionX=new K(1,0),nl.BlurDirectionY=new K(0,1);var rl,il,al,ol,sl,cl,ll,ul,dl=[],fl=[],pl,ml,hl,gl,_l,vl,yl,bl,xl=!1,Sl=!0,Cl=!1,wl=!1,Tl=0,El=0,Dl=100,Ol=new Gi,kl={uniforms:{baseTexture:{value:null},bloomTextureSoft:{value:null},bloomTextureStrong:{value:null}},vertexShader:`
+				}`})}};nl.BlurDirectionX=new K(1,0),nl.BlurDirectionY=new K(0,1);var rl,il,al,ol,sl,cl,ll,ul,dl,fl,pl=[],ml=[],hl,gl,_l,vl,yl,bl,xl,Sl,Cl=!1,wl=!0,Tl=!1,El=!1,Dl=0,Ol=0,kl=100,Al=new Gi,jl={uniforms:{baseTexture:{value:null},bloomTexture1:{value:null},bloomTexture2:{value:null},bloomTexture3:{value:null},bloomTexture4:{value:null}},vertexShader:`
         varying vec2 vUv;
         void main() {
             vUv = uv;
@@ -4666,15 +4669,19 @@ void main() {
         }
     `,fragmentShader:`
         uniform sampler2D baseTexture;
-        uniform sampler2D bloomTextureSoft;
-        uniform sampler2D bloomTextureStrong;
+        uniform sampler2D bloomTexture1;
+        uniform sampler2D bloomTexture2;
+        uniform sampler2D bloomTexture3;
+        uniform sampler2D bloomTexture4;
         varying vec2 vUv;
         void main() {
             vec4 base = texture2D(baseTexture, vUv);
-            vec4 soft = texture2D(bloomTextureSoft, vUv);
-            vec4 strong = texture2D(bloomTextureStrong, vUv);
+            vec4 b1 = texture2D(bloomTexture1, vUv);
+            vec4 b2 = texture2D(bloomTexture2, vUv);
+            vec4 b3 = texture2D(bloomTexture3, vUv);
+            vec4 b4 = texture2D(bloomTexture4, vUv);
             
-            // Additive Mixing: Base + Soft Bloom + Strong Bloom
-            gl_FragColor = base + soft + strong;
+            // Additive Mixing
+            gl_FragColor = base + b1 + b2 + b3 + b4;
         }
-    `};function Al(){rl=new Gr,rl.background=new X(0),sl=new Pc;let e=window.innerWidth/window.innerHeight;il=new Ui(Dl*e/-2,Dl*e/2,Dl/2,Dl/-2,.1,1e3),il.position.z=10,al=new Sc({antialias:!1}),al.setSize(window.innerWidth,window.innerHeight),al.toneMapping=2,document.body.appendChild(al.domElement),gl=new Lc,_l=new zc(rl),vl=new Hc(rl),yl=new Uc(rl),bl=new Wc(rl),_l.mesh&&_l.mesh.layers.enable(1),vl.mesh&&vl.mesh.layers.enable(2),yl.mesh&&yl.mesh.layers.enable(2),bl.mesh&&bl.mesh.layers.enable(1),Bc(sl,()=>{console.log(`Ignition Sequence Started`),vl&&vl.ignite(),yl&&yl.ignite(),bl&&bl.ignite()});let t=new el(rl,il),n=new nl(new K(window.innerWidth,window.innerHeight),1.5,.4,.85);n.threshold=0,n.strength=2,n.radius=.6,cl=new $c(al),cl.renderToScreen=!1,cl.addPass(t),cl.addPass(n);let r=new nl(new K(window.innerWidth,window.innerHeight),1.5,.4,.85);r.threshold=0,r.strength=3,r.radius=.6,ll=new $c(al),ll.renderToScreen=!1,ll.addPass(t),ll.addPass(r);let i=new Xc(new jr({uniforms:{baseTexture:{value:null},bloomTextureSoft:{value:cl.renderTarget2.texture},bloomTextureStrong:{value:ll.renderTarget2.texture}},vertexShader:kl.vertexShader,fragmentShader:kl.fragmentShader,defines:{}}),`baseTexture`);i.needsSwap=!0,pl=new Xc(Fc),pl.uniforms.uResolution&&pl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),ml=new Xc(Ic),hl=new Xc(Rc),hl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),ul=new $c(al),ul.addPass(t),ul.addPass(i),ul.addPass(pl),ul.addPass(ml),ul.addPass(hl),ol=new jc(25,Dl*e,Dl),ol.seeds.forEach(e=>{let t=new Mc(e,ol,rl);t.mesh&&t.mesh.layers.enable(1),dl.push(t);let n=new Nc(e,ol,rl);fl.push(n)}),window.addEventListener(`keydown`,e=>{let t=e.key.toLowerCase();t===`r`&&(xl=!xl,fl.forEach(e=>e.toggle(xl))),t===`t`&&(Sl=!Sl,dl.forEach(e=>e.toggle(Sl))),t===`s`&&(Cl=!Cl),t===`g`&&(wl=!wl),t===`p`&&_l.toggle(),t===`h`&&gl.toggle()}),window.addEventListener(`resize`,jl),Ml()}function jl(){let e=window.innerWidth/window.innerHeight;il.left=-Dl*e/2,il.right=Dl*e/2,il.top=Dl/2,il.bottom=-Dl/2,il.updateProjectionMatrix(),al.setSize(window.innerWidth,window.innerHeight),cl.setSize(window.innerWidth,window.innerHeight),ll.setSize(window.innerWidth,window.innerHeight),ul.setSize(window.innerWidth,window.innerHeight),pl&&pl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),hl&&hl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),gl&&gl.resize()}function Ml(){requestAnimationFrame(Ml);let e=sl.getData(),t=Ol.getElapsedTime(),n={bass:e.bass,mid:(e.lowMid+e.highMid)/2,treble:e.treble};if(_l&&_l.update(e,t),ol&&ol.update(t,n),dl.forEach(e=>e.update(n,t)),fl.forEach(e=>e.update(n,t)),vl&&vl.update(e,t),yl&&yl.update(e,t),bl&&bl.update(e,t),gl){let e=[...dl,...fl];gl.update(e,il,t),hl&&(hl.uniforms.uActive.value=gl.isActive?1:0,hl.uniforms.uBoxes.value=gl.shaderData)}pl&&(pl.uniforms.uTreble.value=n.treble,Tl+=((Cl?1:0)-Tl)*.05,pl.uniforms.uActive.value=Tl),ml&&(ml.uniforms.uTime.value=t,ml.uniforms.uAudio.value=n.bass,El+=((wl?1:0)-El)*.1,ml.uniforms.uActive.value=El),il.layers.set(1),cl.render(),il.layers.set(2),ll.render(),il.layers.set(0),il.layers.enable(1),il.layers.enable(2),ul.render()}Al();
+    `};function Ml(){rl=new Gr,rl.background=new X(0),sl=new Pc;let e=window.innerWidth/window.innerHeight;il=new Ui(kl*e/-2,kl*e/2,kl/2,kl/-2,.1,1e3),il.position.z=10,al=new Sc({antialias:!1}),al.setSize(window.innerWidth,window.innerHeight),al.toneMapping=2,document.body.appendChild(al.domElement),vl=new Lc,yl=new zc(rl),bl=new Hc(rl),xl=new Uc(rl),Sl=new Wc(rl),yl.mesh&&yl.mesh.layers.enable(1),bl.mesh&&bl.mesh.layers.enable(2),xl.mesh&&xl.mesh.layers.enable(3),Sl.mesh&&Sl.mesh.layers.enable(4),Bc(sl,()=>{bl&&bl.ignite(),xl&&xl.ignite(),Sl&&Sl.ignite()});let t=new el(rl,il),n=new nl(new K(window.innerWidth,window.innerHeight),1.5,.4,.85);n.threshold=0,n.strength=.1,n.radius=.4,cl=new $c(al),cl.renderToScreen=!1,cl.addPass(t),cl.addPass(n);let r=new nl(new K(window.innerWidth,window.innerHeight),1.5,.4,.85);r.threshold=0,r.strength=.1,r.radius=.8,ll=new $c(al),ll.renderToScreen=!1,ll.addPass(t),ll.addPass(r);let i=new nl(new K(window.innerWidth,window.innerHeight),1.5,.4,.85);i.threshold=0,i.strength=.1,i.radius=.5,ul=new $c(al),ul.renderToScreen=!1,ul.addPass(t),ul.addPass(i);let a=new nl(new K(window.innerWidth,window.innerHeight),1.5,.4,.85);a.threshold=0,a.strength=.3,a.radius=.8,dl=new $c(al),dl.renderToScreen=!1,dl.addPass(t),dl.addPass(a);let o=new Xc(new jr({uniforms:{baseTexture:{value:null},bloomTexture1:{value:cl.renderTarget2.texture},bloomTexture2:{value:ll.renderTarget2.texture},bloomTexture3:{value:ul.renderTarget2.texture},bloomTexture4:{value:dl.renderTarget2.texture}},vertexShader:jl.vertexShader,fragmentShader:jl.fragmentShader,defines:{}}),`baseTexture`);o.needsSwap=!0,hl=new Xc(Fc),hl.uniforms.uResolution&&hl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),gl=new Xc(Ic),_l=new Xc(Rc),_l.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),fl=new $c(al),fl.addPass(t),fl.addPass(o),fl.addPass(hl),fl.addPass(gl),fl.addPass(_l),ol=new jc(25,kl*e,kl),ol.seeds.forEach(e=>{let t=new Mc(e,ol,rl);t.mesh&&t.mesh.layers.enable(1),pl.push(t);let n=new Nc(e,ol,rl);ml.push(n)}),window.addEventListener(`keydown`,e=>{let t=e.key.toLowerCase();t===`r`&&(Cl=!Cl,ml.forEach(e=>e.toggle(Cl))),t===`t`&&(wl=!wl,pl.forEach(e=>e.toggle(wl))),t===`s`&&(Tl=!Tl),t===`g`&&(El=!El),t===`p`&&yl.toggle(),t===`h`&&vl.toggle()}),window.addEventListener(`resize`,Nl),Pl()}function Nl(){let e=window.innerWidth/window.innerHeight;il.left=-kl*e/2,il.right=kl*e/2,il.top=kl/2,il.bottom=-kl/2,il.updateProjectionMatrix(),al.setSize(window.innerWidth,window.innerHeight),cl.setSize(window.innerWidth,window.innerHeight),ll.setSize(window.innerWidth,window.innerHeight),ul.setSize(window.innerWidth,window.innerHeight),dl.setSize(window.innerWidth,window.innerHeight),fl.setSize(window.innerWidth,window.innerHeight),hl&&hl.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),_l&&_l.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight),vl&&vl.resize()}function Pl(){requestAnimationFrame(Pl);let e=sl.getData(),t=Al.getElapsedTime(),n={bass:e.bass,mid:(e.lowMid+e.highMid)/2,treble:e.treble};if(yl&&yl.update(e,t),ol&&ol.update(t,n),pl.forEach(e=>e.update(n,t)),ml.forEach(e=>e.update(n,t)),bl&&bl.update(e,t),xl&&xl.update(e,t),Sl&&Sl.update(e,t),vl){let e=[...pl,...ml];vl.update(e,il,t),_l&&(_l.uniforms.uActive.value=vl.isActive?1:0,_l.uniforms.uBoxes.value=vl.shaderData)}hl&&(hl.uniforms.uTreble.value=n.treble,Dl+=((Tl?1:0)-Dl)*.05,hl.uniforms.uActive.value=Dl),gl&&(gl.uniforms.uTime.value=t,gl.uniforms.uAudio.value=n.bass,Ol+=((El?1:0)-Ol)*.1,gl.uniforms.uActive.value=Ol),il.layers.set(1),cl.render(),il.layers.set(2),ll.render(),il.layers.set(3),ul.render(),il.layers.set(4),dl.render(),il.layers.set(0),il.layers.enable(1),il.layers.enable(2),il.layers.enable(3),il.layers.enable(4),fl.render()}Ml();
