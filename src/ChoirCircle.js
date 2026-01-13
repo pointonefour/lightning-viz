@@ -4,7 +4,7 @@ import * as THREE from 'three';
 export class ChoirCircle {
     constructor(scene) {
         // --- CONFIGURATION ---
-        const particleCount = 16000; 
+        const particleCount = 160000; 
         
         // We use 'angle' instead of 'progress' for a circle
         const angles = new Float32Array(particleCount); 
@@ -85,7 +85,7 @@ export class ChoirCircle {
 
                 void main() {
                     // --- TARGET: CIRCLE ---
-                    float radius = 80.0 + aOffset; // Base Radius
+                    float radius = 50.0 + aOffset; // Base Radius
                     float speed = 0.3; 
                     
                     // Continuous flow around circle
@@ -172,6 +172,7 @@ export class ChoirCircle {
         this.mesh.rotation.x = -Math.PI / 2.5; 
         this.mesh.rotation.z = Math.PI / 4;
         this.mesh.position.set(0, -5, -90); 
+        //this.mesh.layers.enable(3);//layer
 
         scene.add(this.mesh);
 

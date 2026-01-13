@@ -6,7 +6,7 @@ export class AudioGrid {
         this.isClosing = false; // Animation state
         this.startupTimer = 0.0; 
 
-        const geometry = new THREE.PlaneGeometry(50, 50, 20, 20);
+        const geometry = new THREE.PlaneGeometry(30, 30, 20, 20);
 
         const material = new THREE.ShaderMaterial({
             wireframe: true,
@@ -17,7 +17,7 @@ export class AudioGrid {
                 uMid: { value: 0 },
                 uTreble: { value: 0 },
                 uTime: { value: 0 },
-                uColor: { value: new THREE.Color(0.0, 0.1, 0.4) },
+                uColor: { value: new THREE.Color(0.3, 1.5, 1.4) },
                 uStartupTime: { value: 0.0 } 
             },
             vertexShader: `
@@ -97,11 +97,11 @@ export class AudioGrid {
         this.mesh.rotation.x = -Math.PI / 2.5; 
         this.mesh.rotation.z = Math.PI / 4;  
         this.mesh.position.z = -60; 
-        this.mesh.position.y = 8;
+        this.mesh.position.y = 0;
         
         this.mesh.visible = false;
         scene.add(this.mesh);
-        this.mesh.layers.enable(2);
+        //this.mesh.layers.enable(4);//layer
     }
 
     toggle() {

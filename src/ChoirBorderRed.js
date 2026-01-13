@@ -3,19 +3,17 @@ import * as THREE from 'three';
 export class ChoirBorderRed {
     constructor(scene) {
         // --- CONFIGURATION ---
-        const particleCount = 16000; 
+        const particleCount = 160000; // Increased slightly for density
         
-        const progress = new Float32Array(particleCount); 
-        const offsets = new Float32Array(particleCount);  
+        // Use Angle and Radius-Ratio instead of Progress
+        const angles = new Float32Array(particleCount); 
+        const radiusRatios = new Float32Array(particleCount); // 0.0 to 1.0 (Inner to Outer)
         const randoms = new Float32Array(particleCount);  
         const startPositions = new Float32Array(particleCount * 3);
 
         const dummyObj = new THREE.Object3D();
-        
-        // --- POSITION SHIFT ---
-        // Blue is at -5. We put Red at -15 (Lower down).
-        dummyObj.position.set(0, -10, -90); 
-        
+        // Positioned slightly lower
+        dummyObj.position.set(0, -15, -90); 
         dummyObj.rotation.x = -Math.PI / 2.5;
         dummyObj.rotation.z = Math.PI / 4;
         dummyObj.updateMatrixWorld();
@@ -24,8 +22,13 @@ export class ChoirBorderRed {
         const tempVec = new THREE.Vector3();
 
         for (let i = 0; i < particleCount; i++) {
-            progress[i] = Math.random() * 4.0;
-            offsets[i] = (Math.random() - 0.5) * 0.2; 
+            // Random Angle
+            angles[i] = Math.random() * Math.PI * 2;
+            
+            // Random position between Inner and Outer radius
+            // sqrt() ensures uniform distribution so it doesn't bunch up in the center
+            radiusRatios[i] = Math.sqrt(Math.random()); 
+            
             randoms[i] = Math.random();
 
             // --- STATE 1: RED WALL ---
@@ -44,8 +47,8 @@ export class ChoirBorderRed {
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(particleCount * 3), 3));
         
-        geometry.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
-        geometry.setAttribute('aOffset', new THREE.BufferAttribute(offsets, 1));
+        geometry.setAttribute('aAngle', new THREE.BufferAttribute(angles, 1));
+        geometry.setAttribute('aRadiusRatio', new THREE.BufferAttribute(radiusRatios, 1));
         geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
         geometry.setAttribute('aStartPos', new THREE.BufferAttribute(startPositions, 3));
 
@@ -56,16 +59,16 @@ export class ChoirBorderRed {
             uniforms: {
                 uTime: { value: 0 },
                 uAudio: { value: 0 }, 
-                uColor: { value: new THREE.Color(1.1, 1.9, 0.9) },
+                uColor: { value: new THREE.Color(1.8, 0.5, 0.05) },
                 uFormation: { value: 0.0 } 
             },
             vertexShader: `
                 uniform float uTime;
-                uniform float uAudio;
+                uniform float uAudio; 
                 uniform float uFormation;
                 
-                attribute float aProgress;
-                attribute float aOffset;
+                attribute float aAngle;
+                attribute float aRadiusRatio;
                 attribute float aRandom;
                 attribute vec3 aStartPos;
                 
@@ -79,46 +82,53 @@ export class ChoirBorderRed {
                 }
 
                 void main() {
-                    // --- TARGET: TWIN CONFIGURATION ---
-                    float size = 80.0;
-                    float halfSize = size / 2.0;
-                    float speed = 0.2; 
-                    float currentT = mod(aProgress + (uTime * speed), 4.0);
-                    float side = floor(currentT);
-                    float t = fract(currentT);
+                    // --- TARGET: THICK DISK / PATH ---
+                    float innerRadius = 50.0;
+                    float outerRadius = 80.0;
+                    
+                    // Calculate specific radius for this particle
+                    float r = mix(innerRadius, outerRadius, aRadiusRatio);
+                    
+                    // Orbit Speed (slower near outside for realism)
+                    float speed = 0.2 * (50.0 / r); 
+                    float currentAngle = mod(aAngle + (uTime * speed), 6.28318);
 
-                    vec3 borderPos = vec3(0.0);
-                    if (side == 0.0) { borderPos.x = halfSize + aOffset; borderPos.y = mix(-halfSize, halfSize, t); } 
-                    else if (side == 1.0) { borderPos.x = mix(halfSize, -halfSize, t); borderPos.y = halfSize + aOffset; } 
-                    else if (side == 2.0) { borderPos.x = -halfSize + aOffset; borderPos.y = mix(halfSize, -halfSize, t); } 
-                    else { borderPos.x = mix(-halfSize, halfSize, t); borderPos.y = -halfSize + aOffset; }
-                    borderPos.z = (aRandom - 0.5) * 0.5;
+                    // Base Position on Disk
+                    vec3 diskPos = vec3(0.0);
+                    diskPos.x = cos(currentAngle) * r;
+                    diskPos.y = sin(currentAngle) * r;
+                    diskPos.z = (aRandom - 0.5) * 2.0; // Small thickness Z
 
-                    // --- VORTEX DISPLACEMENT (Twin Logic) ---
+                    // --- AUDIO VORTEX DISPLACEMENT ---
                     float noiseScale = 0.1; 
-                    // Offset time slightly so it ripples differently than Blue
-                    float noiseVal = noise(vec2(borderPos.x * noiseScale + uTime + 10.0, borderPos.y * noiseScale));
+                    // Offset time slightly
+                    float noiseVal = noise(vec2(diskPos.x * noiseScale + uTime + 10.0, diskPos.y * noiseScale));
                     float eruptionMask = smoothstep(0.3, 0.8, noiseVal);
                     
                     float expansionStrength = uAudio * 0.8 * eruptionMask; 
-                    vec3 radialMove = vec3(borderPos.x, borderPos.y, 0.0) * expansionStrength;
                     
-                    vec3 dir = normalize(vec3(borderPos.x, borderPos.y, 0.0));
+                    // Move Outwards
+                    vec3 radialMove = vec3(diskPos.x, diskPos.y, 0.0) * (expansionStrength * 0.5); // Less expansion for disk
+                    
+                    // Swirl
+                    vec3 dir = normalize(vec3(diskPos.x, diskPos.y, 0.0));
                     vec3 perp = vec3(-dir.y, dir.x, 0.0);
                     float curlStrength = sin((uTime * 3.0) + (aRandom * 10.0)); 
                     vec3 swirlMove = perp * curlStrength * (length(radialMove) * 0.5);
 
-                    borderPos += radialMove + swirlMove;
-                    borderPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
+                    diskPos += radialMove + swirlMove;
+                    
+                    // Z-Bump (Tornado effect)
+                    diskPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
 
-                    // --- START STATE: RED WALL WAVINESS ---
+                    // --- START STATE ---
                     vec3 startPos = aStartPos;
                     startPos.z += sin(aStartPos.x * 0.05 + uTime * 2.0) * 4.0;
                     startPos.y += cos(aStartPos.y * 0.05 + uTime * 1.5) * 2.0;
 
                     // --- MIX ---
                     float ease = uFormation * uFormation * (3.0 - 2.0 * uFormation);
-                    vec3 finalPos = mix(startPos, borderPos, ease);
+                    vec3 finalPos = mix(startPos, diskPos, ease);
 
                     vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
                     
@@ -143,13 +153,10 @@ export class ChoirBorderRed {
         });
 
         this.mesh = new THREE.Points(geometry, material);
-        
-        // --- POSITION SET (Lower than Blue) ---
         this.mesh.rotation.x = -Math.PI / 2.5; 
         this.mesh.rotation.z = Math.PI / 4;
-        this.mesh.position.set(0, 0, -90); 
+        this.mesh.position.set(0, -5, -90); 
 
-        this.mesh.layers.enable(2);
         scene.add(this.mesh);
 
         this.smoothValue = 0;
@@ -166,9 +173,6 @@ export class ChoirBorderRed {
             this.mesh.material.uniforms.uFormation.value = this.formationLevel;
         }
 
-        // --- AUDIO LOGIC: NOTES (MIDS) ---
-        // We combine Low Mids (Body of synth/guitar) and High Mids (Presence).
-        // We ignore Bass (Kick drum) and Treble (Air/Hiss).
         const target = (audio.lowMid * 0.5) + (audio.highMid * 0.5);
         
         const attack = 0.1; 

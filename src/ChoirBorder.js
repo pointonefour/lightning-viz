@@ -3,16 +3,16 @@ import * as THREE from 'three';
 export class ChoirBorder {
     constructor(scene) {
         // --- CONFIGURATION ---
-        const particleCount = 16000; 
+        const particleCount = 160000; 
         
         const progress = new Float32Array(particleCount); 
         const offsets = new Float32Array(particleCount);  
         const randoms = new Float32Array(particleCount);  
         const startPositions = new Float32Array(particleCount * 3);
 
-        // --- 1. SETUP MATH ---
         const dummyObj = new THREE.Object3D();
-        dummyObj.position.set(0, 20, -90); 
+        // Aligned position (0, 0, -90) so it matches the mesh
+        dummyObj.position.set(0, 0, -90); 
         dummyObj.rotation.x = -Math.PI / 2.5;
         dummyObj.rotation.z = Math.PI / 4;
         dummyObj.updateMatrixWorld();
@@ -25,7 +25,7 @@ export class ChoirBorder {
             offsets[i] = (Math.random() - 0.5) * 0.2; 
             randoms[i] = Math.random();
 
-            // --- 2. STATE 1: FLAT WALL ---
+            // --- STATE 1: FLAT WALL ---
             const screenX = (Math.random() - 0.5) * 400; 
             const screenY = (Math.random() - 0.5) * 250;
             const screenZ = 0; 
@@ -53,7 +53,8 @@ export class ChoirBorder {
             uniforms: {
                 uTime: { value: 0 },
                 uAudio: { value: 0 }, 
-                uColor: { value: new THREE.Color(0.4, 0.9, 2.5) },
+                // Bright Orange/Gold
+                uColor: { value: new THREE.Color(1.4, 0.5, 0.05) },
                 uFormation: { value: 0.0 } 
             },
             vertexShader: `
@@ -77,7 +78,7 @@ export class ChoirBorder {
 
                 void main() {
                     // --- TARGET: BORDER ---
-                    float size = 60.0;
+                    float size = 30.0;
                     float halfSize = size / 2.0;
                     float speed = 0.2; 
                     float currentT = mod(aProgress + (uTime * speed), 4.0);
@@ -95,7 +96,8 @@ export class ChoirBorder {
                     float noiseScale = 0.1; 
                     float noiseVal = noise(vec2(borderPos.x * noiseScale + uTime, borderPos.y * noiseScale));
                     float eruptionMask = smoothstep(0.3, 0.8, noiseVal);
-                    float expansionStrength = uAudio * 0.8 * eruptionMask; 
+                    
+                    float expansionStrength = uAudio * 2.5 * eruptionMask; 
                     vec3 radialMove = vec3(borderPos.x, borderPos.y, 0.0) * expansionStrength;
                     
                     vec3 dir = normalize(vec3(borderPos.x, borderPos.y, 0.0));
@@ -106,10 +108,8 @@ export class ChoirBorder {
                     borderPos += radialMove + swirlMove;
                     borderPos.z += sin(uTime * 5.0 + aRandom * 20.0) * (length(radialMove) * 0.2);
 
-                    // --- START: GENTLE WAVING WALL ---
+                    // --- START STATE ---
                     vec3 startPos = aStartPos;
-                    // Slow sine wave (uTime * 0.5)
-                    // Amplitude 4.0 creates visible but gentle breathing
                     startPos.z += sin(aStartPos.x * 0.02 + uTime * 0.5) * 4.0; 
 
                     // --- MIX ---
@@ -118,13 +118,10 @@ export class ChoirBorder {
 
                     vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
                     
-                    // --- SIZE ---
-                    // Kept uniform (2.0 + small random) to prevent bloom artifacts
                     gl_PointSize = (2.0 + (aRandom * 0.5)) * (40.0 / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
 
-                    // --- ALPHA ---
-                    float borderAlpha = 0.1 + (uAudio * 0.4) + (eruptionMask * uAudio * 0.4);
+                    float borderAlpha = 0.1 + (uAudio * 0.8) + (eruptionMask * uAudio * 0.5);
                     vAlpha = mix(0.15, borderAlpha, ease);
                 }
             `,
@@ -144,20 +141,20 @@ export class ChoirBorder {
         this.mesh = new THREE.Points(geometry, material);
         this.mesh.rotation.x = -Math.PI / 2.5; 
         this.mesh.rotation.z = Math.PI / 4;
-        this.mesh.position.set(0, 5, -90); 
+        this.mesh.position.set(0, 0, -90); 
 
+        // Important: If using the new main.js with 4 layers, ensure this matches
+        // But since you asked for NO changes to main.js, we assume main.js 
+        // assigns the layer externally.
+        
         scene.add(this.mesh);
-        this.mesh.layers.enable(2);
-
 
         this.smoothValue = 0;
         this.isIgnited = false;
         this.formationLevel = 0.0;
     }
 
-    ignite() {
-        this.isIgnited = true;
-    }
+    ignite() { this.isIgnited = true; }
 
     update(audio, time) {
         if (this.isIgnited && this.formationLevel < 1.0) {
@@ -166,9 +163,23 @@ export class ChoirBorder {
             this.mesh.material.uniforms.uFormation.value = this.formationLevel;
         }
 
-        const target = (audio.highMid * 0.6) + (audio.treble * 0.4);
-        const attack = 0.1; 
-        const decay = 0.03; 
+        // --- FIX: USE EXISTING VARIABLES ---
+        // audio.mid DOES NOT EXIST in raw data.
+        // We use lowMid and highMid.
+        
+        const lowMid = audio.lowMid || 0;
+        const highMid = audio.highMid || 0;
+        const treble = audio.treble || 0;
+
+        // Combine them to detect "Notes/Vocals"
+        const rawSignal = (lowMid * 0.4) + (highMid * 0.4) + (treble * 0.2);
+        
+        // Non-linear response (Snaps to peaks)
+        const target = Math.pow(rawSignal, 1.5); 
+
+        const attack = 0.2; 
+        const decay = 0.1; 
+        
         if (target > this.smoothValue) this.smoothValue += (target - this.smoothValue) * attack;
         else this.smoothValue += (target - this.smoothValue) * decay;
 

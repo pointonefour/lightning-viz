@@ -19,8 +19,8 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 let scene, camera, renderer, borderSystem, sound;
-// We now have TWO bloom composers
-let bloomComposerSoft, bloomComposerStrong, finalComposer;
+// 4 Bloom Composers + 1 Final
+let bloomComposer1, bloomComposer2, bloomComposer3, bloomComposer4, finalComposer;
 let trees = [];
 let voiceTrees = [];
 let streaksPass, glitchPass, invertPass;
@@ -37,12 +37,14 @@ let glitchFade = 0.0;
 const frustumSize = 100;
 const clock = new THREE.Clock();
 
-// --- MULTI-LAYER MIX SHADER ---
+// --- 4-LAYER MIX SHADER ---
 const FinalMixShader = {
     uniforms: {
         baseTexture: { value: null },
-        bloomTextureSoft: { value: null },   // Layer 1 Result
-        bloomTextureStrong: { value: null }  // Layer 2 Result
+        bloomTexture1: { value: null },
+        bloomTexture2: { value: null },
+        bloomTexture3: { value: null },
+        bloomTexture4: { value: null }
     },
     vertexShader: `
         varying vec2 vUv;
@@ -53,16 +55,20 @@ const FinalMixShader = {
     `,
     fragmentShader: `
         uniform sampler2D baseTexture;
-        uniform sampler2D bloomTextureSoft;
-        uniform sampler2D bloomTextureStrong;
+        uniform sampler2D bloomTexture1;
+        uniform sampler2D bloomTexture2;
+        uniform sampler2D bloomTexture3;
+        uniform sampler2D bloomTexture4;
         varying vec2 vUv;
         void main() {
             vec4 base = texture2D(baseTexture, vUv);
-            vec4 soft = texture2D(bloomTextureSoft, vUv);
-            vec4 strong = texture2D(bloomTextureStrong, vUv);
+            vec4 b1 = texture2D(bloomTexture1, vUv);
+            vec4 b2 = texture2D(bloomTexture2, vUv);
+            vec4 b3 = texture2D(bloomTexture3, vUv);
+            vec4 b4 = texture2D(bloomTexture4, vUv);
             
-            // Additive Mixing: Base + Soft Bloom + Strong Bloom
-            gl_FragColor = base + soft + strong;
+            // Additive Mixing
+            gl_FragColor = base + b1 + b2 + b3 + b4;
         }
     `
 };
@@ -88,54 +94,66 @@ function init() {
     choirRed = new ChoirBorderRed(scene);
     choirCircle = new ChoirCircle(scene);
 
-    // --- ASSIGN LAYERS ---
-    // Layer 1 = SOFT BLOOM (Trees, Grid)
-    // Layer 2 = STRONG BLOOM (Choir Elements)
-    
+    // --- ASSIGN LAYERS (CRITICAL) ---
+    // Layer 1: Trees & Grid (Soft)
+    // Layer 2: Blue Border (Strong)
+    // Layer 3: Red Border (Sharp)
+    // Layer 4: Circle (Wide)
+
     if(audioGrid.mesh) audioGrid.mesh.layers.enable(1); 
-    if(choirBorder.mesh) choirBorder.mesh.layers.enable(2); // Layer 2
-    if(choirRed.mesh) choirRed.mesh.layers.enable(2);       // Layer 2
-    if(choirCircle.mesh) choirCircle.mesh.layers.enable(1); // Layer 2
+    if(choirBorder.mesh) choirBorder.mesh.layers.enable(2); 
+    if(choirRed.mesh) choirRed.mesh.layers.enable(3);       
+    if(choirCircle.mesh) choirCircle.mesh.layers.enable(4); 
 
     createStartUI(sound, () => {
-        console.log("Ignition Sequence Started");
         if (choirBorder) choirBorder.ignite();
         if (choirRed) choirRed.ignite();
         if (choirCircle) choirCircle.ignite();
     });
 
-    // --- COMPOSER SETUP ---
     const renderScene = new RenderPass(scene, camera);
 
-    // 1. SOFT BLOOM COMPOSER (For Layer 1)
-    const bloomPassSoft = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPassSoft.threshold = 0.0;
-    bloomPassSoft.strength = 2.0; 
-    bloomPassSoft.radius = 0.6;   // Tight glow
+    // --- 1. BLOOM COMPOSER 1 (Soft/Tight) ---
+    const pass1 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    pass1.threshold = 0.0; pass1.strength = 0.1; pass1.radius = 0.4;
+    bloomComposer1 = new EffectComposer(renderer);
+    bloomComposer1.renderToScreen = false;
+    bloomComposer1.addPass(renderScene);
+    bloomComposer1.addPass(pass1);
 
-    bloomComposerSoft = new EffectComposer(renderer);
-    bloomComposerSoft.renderToScreen = false;
-    bloomComposerSoft.addPass(renderScene);
-    bloomComposerSoft.addPass(bloomPassSoft);
+    // --- 2. BLOOM COMPOSER 2 (Blue/Strong) ---
+    const pass2 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    pass2.threshold = 0.0; pass2.strength = 0.1; pass2.radius = 0.8;
+    bloomComposer2 = new EffectComposer(renderer);
+    bloomComposer2.renderToScreen = false;
+    bloomComposer2.addPass(renderScene);
+    bloomComposer2.addPass(pass2);
 
-    // 2. STRONG BLOOM COMPOSER (For Layer 2)
-    const bloomPassStrong = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPassStrong.threshold = 0.0;
-    bloomPassStrong.strength = 3.0; // High strength for Choir
-    bloomPassStrong.radius = 0.6;   // Wide glow
+    // --- 3. BLOOM COMPOSER 3 (Red/Sharp) ---
+    const pass3 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    pass3.threshold = 0.0; pass3.strength = 0.1; pass3.radius = 0.5; // Sharp radius
+    bloomComposer3 = new EffectComposer(renderer);
+    bloomComposer3.renderToScreen = false;
+    bloomComposer3.addPass(renderScene);
+    bloomComposer3.addPass(pass3);
 
-    bloomComposerStrong = new EffectComposer(renderer);
-    bloomComposerStrong.renderToScreen = false;
-    bloomComposerStrong.addPass(renderScene);
-    bloomComposerStrong.addPass(bloomPassStrong);
+    // --- 4. BLOOM COMPOSER 4 (Circle/Wide) ---
+    const pass4 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    pass4.threshold = 0.0; pass4.strength = 0.3; pass4.radius = 0.8; // Very wide glow
+    bloomComposer4 = new EffectComposer(renderer);
+    bloomComposer4.renderToScreen = false;
+    bloomComposer4.addPass(renderScene);
+    bloomComposer4.addPass(pass4);
 
-    // 3. FINAL COMPOSER
+    // --- FINAL COMPOSER ---
     const finalMixPass = new ShaderPass(
         new THREE.ShaderMaterial({
             uniforms: {
                 baseTexture: { value: null },
-                bloomTextureSoft: { value: bloomComposerSoft.renderTarget2.texture },
-                bloomTextureStrong: { value: bloomComposerStrong.renderTarget2.texture }
+                bloomTexture1: { value: bloomComposer1.renderTarget2.texture },
+                bloomTexture2: { value: bloomComposer2.renderTarget2.texture },
+                bloomTexture3: { value: bloomComposer3.renderTarget2.texture },
+                bloomTexture4: { value: bloomComposer4.renderTarget2.texture }
             },
             vertexShader: FinalMixShader.vertexShader,
             fragmentShader: FinalMixShader.fragmentShader,
@@ -144,7 +162,6 @@ function init() {
     );
     finalMixPass.needsSwap = true;
 
-    // FX
     streaksPass = new ShaderPass(StreaksShader);
     if (streaksPass.uniforms.uResolution) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     glitchPass = new ShaderPass(GlitchShader);
@@ -153,7 +170,7 @@ function init() {
 
     finalComposer = new EffectComposer(renderer);
     finalComposer.addPass(renderScene);
-    finalComposer.addPass(finalMixPass); // Mix everything here
+    finalComposer.addPass(finalMixPass);
     finalComposer.addPass(streaksPass); 
     finalComposer.addPass(glitchPass); 
     finalComposer.addPass(invertPass);
@@ -162,10 +179,9 @@ function init() {
     borderSystem = new BorderSystem(25, frustumSize * aspect, frustumSize);
     borderSystem.seeds.forEach(seed => {
         const tree = new Tree(seed, borderSystem, scene);
-        // Important: Trees go to Layer 1 (Soft Bloom)
+        // Trees go to Layer 1 (Soft)
         if(tree.mesh) tree.mesh.layers.enable(1); 
         trees.push(tree);
-        
         const vTree = new VoiceTree(seed, borderSystem, scene);
         voiceTrees.push(vTree);
     });
@@ -193,8 +209,10 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     
-    bloomComposerSoft.setSize(window.innerWidth, window.innerHeight);
-    bloomComposerStrong.setSize(window.innerWidth, window.innerHeight);
+    bloomComposer1.setSize(window.innerWidth, window.innerHeight);
+    bloomComposer2.setSize(window.innerWidth, window.innerHeight);
+    bloomComposer3.setSize(window.innerWidth, window.innerHeight);
+    bloomComposer4.setSize(window.innerWidth, window.innerHeight);
     finalComposer.setSize(window.innerWidth, window.innerHeight);
     
     if(streaksPass) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
@@ -204,7 +222,6 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
-    
     const audioData = sound.getData(); 
     const time = clock.getElapsedTime();
 
@@ -247,20 +264,31 @@ function animate() {
         glitchPass.uniforms.uActive.value = glitchFade;
     }
 
-    // --- MULTI-PASS RENDER LOOP ---
+    // --- MULTI-PASS RENDER ---
     
-    // 1. Render Soft Bloom (Layer 1)
+    // Render 1
     camera.layers.set(1);
-    bloomComposerSoft.render();
-    
-    // 2. Render Strong Bloom (Layer 2)
+    bloomComposer1.render();
+
+    // Render 2
     camera.layers.set(2);
-    bloomComposerStrong.render();
-    
-    // 3. Render Final Scene (Layer 0 + 1 + 2)
+    bloomComposer2.render();
+
+    // Render 3
+    camera.layers.set(3);
+    bloomComposer3.render();
+
+    // Render 4
+    camera.layers.set(4);
+    bloomComposer4.render();
+
+    // Final
     camera.layers.set(0);
     camera.layers.enable(1);
     camera.layers.enable(2);
+    camera.layers.enable(3);
+    camera.layers.enable(4);
+    
     finalComposer.render();
 }
 
