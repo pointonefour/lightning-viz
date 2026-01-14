@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export class ChoirBorderRed {
     constructor(scene) {
         // --- CONFIGURATION ---
-        const particleCount = 160000; // Increased slightly for density
+        const particleCount = 80000; // Increased slightly for density
         
         // Use Angle and Radius-Ratio instead of Progress
         const angles = new Float32Array(particleCount); 

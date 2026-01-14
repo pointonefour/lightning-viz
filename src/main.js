@@ -17,9 +17,10 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+// 1. IMPORT SMAA
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 let scene, camera, renderer, borderSystem, sound;
-// 4 Bloom Composers + 1 Final
 let bloomComposer1, bloomComposer2, bloomComposer3, bloomComposer4, finalComposer;
 let trees = [];
 let voiceTrees = [];
@@ -37,7 +38,6 @@ let glitchFade = 0.0;
 const frustumSize = 100;
 const clock = new THREE.Clock();
 
-// --- 4-LAYER MIX SHADER ---
 const FinalMixShader = {
     uniforms: {
         baseTexture: { value: null },
@@ -66,8 +66,6 @@ const FinalMixShader = {
             vec4 b2 = texture2D(bloomTexture2, vUv);
             vec4 b3 = texture2D(bloomTexture3, vUv);
             vec4 b4 = texture2D(bloomTexture4, vUv);
-            
-            // Additive Mixing
             gl_FragColor = base + b1 + b2 + b3 + b4;
         }
     `
@@ -82,8 +80,16 @@ function init() {
     camera = new THREE.OrthographicCamera(frustumSize*aspect/-2, frustumSize*aspect/2, frustumSize/2, frustumSize/-2, 0.1, 1000);
     camera.position.z = 10;
 
-    renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: false, // False because we use SMAA pass later
+        powerPreference: "high-performance"
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    // 2. CRITICAL FIX: Set Pixel Ratio for High-DPI screens
+    // We limit it to 2 to save battery/perf on 4k mobile screens
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
     renderer.toneMapping = THREE.ReinhardToneMapping;
     document.body.appendChild(renderer.domElement);
 
@@ -93,12 +99,6 @@ function init() {
     choirBorder = new ChoirBorder(scene);
     choirRed = new ChoirBorderRed(scene);
     choirCircle = new ChoirCircle(scene);
-
-    // --- ASSIGN LAYERS (CRITICAL) ---
-    // Layer 1: Trees & Grid (Soft)
-    // Layer 2: Blue Border (Strong)
-    // Layer 3: Red Border (Sharp)
-    // Layer 4: Circle (Wide)
 
     if(audioGrid.mesh) audioGrid.mesh.layers.enable(1); 
     if(choirBorder.mesh) choirBorder.mesh.layers.enable(2); 
@@ -113,33 +113,33 @@ function init() {
 
     const renderScene = new RenderPass(scene, camera);
 
-    // --- 1. BLOOM COMPOSER 1 (Soft/Tight) ---
+    // --- 1. BLOOM 1 (Soft) ---
     const pass1 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    pass1.threshold = 0.0; pass1.strength = 0.1; pass1.radius = 0.4;
+    pass1.threshold = 0.0; pass1.strength = 0.05; pass1.radius = 0.0;
     bloomComposer1 = new EffectComposer(renderer);
     bloomComposer1.renderToScreen = false;
     bloomComposer1.addPass(renderScene);
     bloomComposer1.addPass(pass1);
 
-    // --- 2. BLOOM COMPOSER 2 (Blue/Strong) ---
+    // --- 2. BLOOM 2 (Blue) ---
     const pass2 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    pass2.threshold = 0.0; pass2.strength = 0.1; pass2.radius = 0.8;
+    pass2.threshold = 0.0; pass2.strength = 0.2; pass2.radius = 0.2;
     bloomComposer2 = new EffectComposer(renderer);
     bloomComposer2.renderToScreen = false;
     bloomComposer2.addPass(renderScene);
     bloomComposer2.addPass(pass2);
 
-    // --- 3. BLOOM COMPOSER 3 (Red/Sharp) ---
+    // --- 3. BLOOM 3 (Red) ---
     const pass3 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    pass3.threshold = 0.0; pass3.strength = 0.1; pass3.radius = 0.5; // Sharp radius
+    pass3.threshold = 0.0; pass3.strength = 0.5; pass3.radius = 0.3;
     bloomComposer3 = new EffectComposer(renderer);
     bloomComposer3.renderToScreen = false;
     bloomComposer3.addPass(renderScene);
     bloomComposer3.addPass(pass3);
 
-    // --- 4. BLOOM COMPOSER 4 (Circle/Wide) ---
+    // --- 4. BLOOM 4 (Circle) ---
     const pass4 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    pass4.threshold = 0.0; pass4.strength = 0.3; pass4.radius = 0.8; // Very wide glow
+    pass4.threshold = 0.0; pass4.strength = 0.2; pass4.radius = 0.3;
     bloomComposer4 = new EffectComposer(renderer);
     bloomComposer4.renderToScreen = false;
     bloomComposer4.addPass(renderScene);
@@ -168,19 +168,25 @@ function init() {
     invertPass = new ShaderPass(InvertShader);
     invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 
+    // 3. SMAA PASS (Anti-Aliasing)
+    // Needs screen resolution
+    const smaaPass = new SMAAPass(window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio());
+
     finalComposer = new EffectComposer(renderer);
     finalComposer.addPass(renderScene);
     finalComposer.addPass(finalMixPass);
     finalComposer.addPass(streaksPass); 
     finalComposer.addPass(glitchPass); 
     finalComposer.addPass(invertPass);
+    
+    // SMAA Must be the LAST pass to smooth out jagged edges
+    finalComposer.addPass(smaaPass); 
 
     // Systems
     borderSystem = new BorderSystem(25, frustumSize * aspect, frustumSize);
     borderSystem.seeds.forEach(seed => {
         const tree = new Tree(seed, borderSystem, scene);
-        // Trees go to Layer 1 (Soft)
-        if(tree.mesh) tree.mesh.layers.enable(1); 
+        if(tree.mesh) tree.mesh.layers.enable(3); 
         trees.push(tree);
         const vTree = new VoiceTree(seed, borderSystem, scene);
         voiceTrees.push(vTree);
@@ -209,12 +215,14 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     
+    // Update Composers
     bloomComposer1.setSize(window.innerWidth, window.innerHeight);
     bloomComposer2.setSize(window.innerWidth, window.innerHeight);
     bloomComposer3.setSize(window.innerWidth, window.innerHeight);
     bloomComposer4.setSize(window.innerWidth, window.innerHeight);
     finalComposer.setSize(window.innerWidth, window.innerHeight);
     
+    // Update FX
     if(streaksPass) streaksPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     if(invertPass) invertPass.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     if(hud) hud.resize();
@@ -264,25 +272,11 @@ function animate() {
         glitchPass.uniforms.uActive.value = glitchFade;
     }
 
-    // --- MULTI-PASS RENDER ---
-    
-    // Render 1
-    camera.layers.set(1);
-    bloomComposer1.render();
+    camera.layers.set(1); bloomComposer1.render();
+    camera.layers.set(2); bloomComposer2.render();
+    camera.layers.set(3); bloomComposer3.render();
+    camera.layers.set(4); bloomComposer4.render();
 
-    // Render 2
-    camera.layers.set(2);
-    bloomComposer2.render();
-
-    // Render 3
-    camera.layers.set(3);
-    bloomComposer3.render();
-
-    // Render 4
-    camera.layers.set(4);
-    bloomComposer4.render();
-
-    // Final
     camera.layers.set(0);
     camera.layers.enable(1);
     camera.layers.enable(2);
